@@ -1,0 +1,1376 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <title>Ahmet Tekeli Kuaför • Online Randevu</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#e5e7eb;
+      --card:#ffffffee;
+      --glass:#ffffffdd;
+      --ink:#111827;
+      --muted:#6b7280;
+      --brand:#d4af37;
+      --danger:#dc2626;
+      --ok:#16a34a;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{
+      height:100%;
+      font:15px/1.5 "Inter",system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      background:var(--bg);
+      color:var(--ink);
+    }
+    body{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      padding:16px;
+    }
+    .bg{
+      position:fixed;inset:0;z-index:-2;
+      background:
+        radial-gradient(circle at 0 0,rgba(212,175,55,.22),transparent 45%),
+        radial-gradient(circle at 100% 100%,rgba(148,163,184,.55),transparent 45%),
+        url("https://images.pexels.com/photos/3993447/pexels-photo-3993447.jpeg?auto=compress&cs=tinysrgb&w=1200") center/cover no-repeat;
+      filter:blur(5px) brightness(1.05);
+      transform:scale(1.03);
+    }
+    .shell{
+      width:100%;
+      max-width:950px;
+      position:relative;
+      margin-top:12px;
+      display:grid;
+      grid-template-columns:minmax(0,430px) minmax(0,1fr);
+      gap:18px;
+    }
+    @media(max-width:900px){
+      .shell{grid-template-columns:1fr;max-width:430px}
+    }
+    .card-main{
+      background:var(--card);
+      border-radius:32px;
+      box-shadow:0 22px 60px rgba(15,23,42,.20);
+      padding:28px 22px 22px;
+      border:1px solid rgba(148,163,184,.45);
+      position:relative;
+      overflow:hidden;
+    }
+    .card-main::before{
+      content:"";
+      position:absolute;
+      left:24px;right:24px;top:56px;
+      height:2px;
+      border-radius:999px;
+      background:linear-gradient(90deg,#e5e7eb,#facc15,#e5e7eb);
+      opacity:.85;
+    }
+
+    /* Üst sağ: admin + müşteri */
+    .top-right{
+      position:absolute;
+      top:12px;
+      right:18px;
+      display:flex;
+      flex-direction:column;
+      align-items:flex-end;
+      gap:6px;
+    }
+    .admin-btn,.cust-btn{
+      padding:6px 14px;
+      border-radius:999px;
+      background:#f9fafb;
+      color:#111827;
+      font-size:12px;
+      font-weight:600;
+      border:none;
+      box-shadow:0 8px 18px rgba(15,23,42,.18);
+      cursor:pointer;
+    }
+    .admin-btn.hidden{display:none}
+    .admin-logout{
+      margin-left:6px;
+      padding:4px 8px;
+      border-radius:999px;
+      background:transparent;
+      border:1px solid rgba(148,163,184,.7);
+      color:var(--muted);
+      font-size:11px;
+      cursor:pointer;
+    }
+
+    /* Müşteri login paneli (yukarıda admin altında) */
+    .cust-panel-fly{
+      position:absolute;
+      top:56px;
+      right:18px;
+      width:230px;
+      border-radius:18px;
+      background:#f9fafb;
+      border:1px solid rgba(148,163,184,.5);
+      box-shadow:0 14px 30px rgba(15,23,42,.25);
+      padding:10px 10px 12px;
+      font-size:12px;
+      display:none;
+      z-index:5;
+    }
+    .cust-panel-fly.active{display:block}
+    .cust-panel-fly label{
+      font-size:11px;
+      color:var(--muted);
+      margin-bottom:2px;
+      display:block;
+    }
+    .cust-panel-fly input{
+      width:100%;
+      border-radius:10px;
+      border:1px solid rgba(148,163,184,.9);
+      padding:6px 8px;
+      font:inherit;
+      font-size:12px;
+      margin-bottom:5px;
+    }
+    .cust-panel-fly button{
+      width:100%;
+      border-radius:999px;
+      border:none;
+      padding:6px 8px;
+      font-size:12px;
+      font-weight:600;
+      background:#111827;
+      color:#f9fafb;
+      cursor:pointer;
+    }
+    .cust-mini-info{
+      font-size:11px;
+      color:var(--muted);
+      margin-top:4px;
+    }
+
+    /* bell */
+    .bell{
+      position:absolute;
+      top:18px;left:18px;
+      width:30px;height:30px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.7);
+      background:#ffffffee;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:16px;
+      cursor:pointer;
+      box-shadow:0 6px 14px rgba(15,23,42,.18);
+    }
+    .bell.hidden{display:none}
+    .bell-count{
+      position:absolute;
+      right:-4px;top:-4px;
+      min-width:16px;height:16px;
+      border-radius:999px;
+      background:var(--danger);
+      color:#fff;
+      font-size:10px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:0 3px;
+    }
+    .bell-alert{animation:ring .4s ease-in-out 4;}
+    @keyframes ring{
+      0%{transform:rotate(0deg);}
+      25%{transform:rotate(-10deg);}
+      50%{transform:rotate(8deg);}
+      75%{transform:rotate(-6deg);}
+      100%{transform:rotate(0deg);}
+    }
+
+    /* logo */
+    .logo-wrap{
+      display:flex;
+      justify-content:center;
+      margin-top:12px;
+      margin-bottom:22px;
+    }
+    .logo-circle{
+      width:92px;height:92px;
+      border-radius:999px;
+      background:#ffffff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow:0 10px 28px rgba(15,23,42,.20);
+    }
+    .logo-circle img{
+      width:80px;height:80px;border-radius:999px;object-fit:cover;
+    }
+
+    .title{
+      text-align:center;
+      margin-bottom:10px;
+    }
+    .title-main{
+      font-size:22px;
+      letter-spacing:.22em;
+      font-weight:800;
+      color:#0f172a;
+    }
+    .title-sub{
+      font-size:11px;
+      text-transform:uppercase;
+      letter-spacing:.18em;
+      color:var(--muted);
+      margin-top:3px;
+    }
+    .rating{
+      margin-top:8px;
+      font-size:12px;
+      color:var(--brand);
+      display:flex;
+      justify-content:center;
+      gap:6px;
+      align-items:center;
+    }
+    .rating span:nth-child(2){
+      color:var(--brand);
+      font-weight:600;
+    }
+    .rating span:nth-child(3){
+      color:var(--muted);
+      font-size:11px;
+    }
+
+    /* form */
+    .form{
+      margin-top:18px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    label{
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:4px;
+      display:block;
+    }
+    .field{display:flex;flex-direction:column;}
+    .field-row{display:flex;gap:10px;}
+    .field-row .field{flex:1}
+    input,select,textarea{
+      width:100%;
+      border-radius:12px;
+      border:1px solid rgba(148,163,184,.9);
+      padding:9px 10px;
+      font:inherit;
+      color:var(--ink);
+      background:#ffffffee;
+      outline:none;
+      transition:border-color .15s,box-shadow .15s,background .15s;
+    }
+    textarea{min-height:48px;resize:vertical;}
+    input::placeholder,textarea::placeholder{color:#9ca3af}
+    input:focus,select:focus,textarea:focus{
+      border-color:var(--brand);
+      box-shadow:0 0 0 1px rgba(212,175,55,.7);
+      background:#ffffff;
+    }
+    .help-text{
+      font-size:11px;
+      color:var(--muted);
+      margin-top:4px;
+    }
+    .btn-main{
+      margin-top:12px;
+      border:none;
+      width:100%;
+      padding:12px 14px;
+      border-radius:999px;
+      font-size:14px;
+      letter-spacing:.08em;
+      font-weight:700;
+      text-transform:uppercase;
+      background:linear-gradient(90deg,#d4af37,#f59e0b);
+      color:#111827;
+      box-shadow:0 14px 32px rgba(180,137,0,.35);
+      cursor:pointer;
+      transition:transform .12s,box-shadow .12s,filter .12s;
+    }
+    .btn-main:hover{transform:translateY(-1px);filter:brightness(1.04);}
+    .btn-main:active{transform:translateY(0);box-shadow:0 8px 18px rgba(180,137,0,.45);}
+    .btn-secondary{
+      border:none;
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:11px;
+      background:#e5e7eb;
+      color:#4b5563;
+      cursor:pointer;
+    }
+    .link-row{
+      margin-top:10px;
+      font-size:11px;
+      color:var(--muted);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+    }
+
+    /* Sağ kolon: Admin paneli + Müşteri randevularım */
+    .side-card{
+      background:var(--glass);
+      border-radius:24px;
+      box-shadow:0 22px 60px rgba(15,23,42,.18);
+      padding:16px 16px 18px;
+      border:1px solid rgba(148,163,184,.45);
+      max-height:calc(100vh - 40px);
+      overflow:auto;
+    }
+    .side-section-title{
+      font-size:14px;
+      font-weight:600;
+      margin-bottom:6px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .badge{
+      font-size:11px;
+      padding:3px 8px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.6);
+      background:#f9fafb;
+      color:#4b5563;
+    }
+    .appt-list{
+      list-style:none;
+      padding:0;margin:0;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    .appt-item{
+      padding:7px 8px;
+      border-radius:10px;
+      background:#f9fafb;
+      border:1px solid #e5e7eb;
+      font-size:12px;
+      display:flex;
+      justify-content:space-between;
+      gap:8px;
+    }
+    .appt-main{display:flex;flex-direction:column;gap:2px}
+    .appt-name{font-weight:600}
+    .appt-meta{color:var(--muted);font-size:11px}
+    .appt-tag{
+      font-size:11px;
+      padding:2px 7px;
+      border-radius:999px;
+      background:#eef2ff;
+      border:1px solid #c7d2fe;
+      align-self:flex-start;
+    }
+    .appt-actions{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+    .btn-small{
+      border:none;
+      border-radius:999px;
+      padding:3px 7px;
+      font-size:11px;
+      cursor:pointer;
+    }
+    .btn-edit{background:#dbeafe;color:#1d4ed8;}
+    .btn-del{background:#fee2e2;color:#b91c1c;}
+
+    .empty{font-size:12px;color:var(--muted);}
+
+    /* admin tabs */
+    .tabs{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;margin-bottom:8px;}
+    .tab-btn{
+      padding:4px 10px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.7);
+      background:#f9fafb;
+      font-size:11px;
+      cursor:pointer;
+    }
+    .tab-btn.active{
+      background:#fef9c3;
+      border-color:var(--brand);
+    }
+    .tab-section{display:none;font-size:12px;}
+    .tab-section.active{display:block;}
+    .inline-form{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      margin-bottom:6px;
+      align-items:center;
+    }
+    .inline-form input{
+      min-width:100px;
+      border-radius:8px;
+      border:1px solid #d1d5db;
+      padding:4px 6px;
+      font-size:12px;
+    }
+    .small-table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:11px;
+      margin-top:4px;
+    }
+    .small-table th,.small-table td{
+      border:1px solid #e5e7eb;
+      padding:4px 5px;
+      text-align:left;
+      white-space:nowrap;
+    }
+    .small-table th{background:#f3f4f6;}
+    .chip-green{
+      background:#dcfce7;
+      border-color:#22c55e;
+      color:#166534;
+    }
+
+    /* toast */
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:18px;
+      transform:translateX(-50%) translateY(120%);
+      min-width:220px;
+      max-width:320px;
+      padding:10px 12px;
+      border-radius:999px;
+      background:#111827;
+      color:#e5e7eb;
+      font-size:13px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      box-shadow:0 16px 30px rgba(15,23,42,.65);
+      opacity:0;
+      pointer-events:none;
+      transition:transform .25s ease, opacity .25s ease;
+      z-index:20;
+    }
+    .toast.show{
+      opacity:1;
+      transform:translateX(-50%) translateY(0);
+      pointer-events:auto;
+    }
+    .toast-dot{
+      width:8px;height:8px;border-radius:999px;
+      background:linear-gradient(135deg,#22c55e,#16a34a);
+    }
+  </style>
+</head>
+<body>
+  <div class="bg"></div>
+
+  <div class="shell">
+    <!-- SOL: ANA FORM -->
+    <div class="card-main">
+      <!-- Çan -->
+      <div class="bell hidden" id="bell">
+        <span>🔔</span>
+        <span class="bell-count hidden" id="bellCount">0</span>
+      </div>
+
+      <!-- Üst sağ: Admin + Müşteri -->
+      <div class="top-right">
+        <button class="admin-btn" id="adminLoginBtn">Admin Girişi</button>
+        <button class="admin-btn hidden" id="adminBadge">
+          Admin
+          <button class="admin-logout" id="adminLogoutBtn" type="button">Çıkış</button>
+        </button>
+        <button class="cust-btn" id="custToggleBtn">Müşteri Girişi</button>
+
+        <div class="cust-panel-fly" id="custFly">
+          <div id="custFlyLoggedOut">
+            <label for="custPhone">Telefon</label>
+            <input id="custPhone" placeholder="05xxxxxxxxx">
+            <label for="custPin">4 haneli şifre</label>
+            <input id="custPin" maxlength="4" inputmode="numeric" placeholder="Ör: 4455">
+            <button id="custLoginBtn">Giriş Yap / Kayıt Ol</button>
+            <div class="cust-mini-info">Giriş kalıcıdır, “Randevularım” panelinde düzenleyip silebilirsiniz.</div>
+          </div>
+          <div id="custFlyLoggedIn" style="display:none;">
+            <div class="cust-mini-info" id="custFlyInfo"></div>
+            <button id="custLogoutBtn2" style="margin-top:6px;">Müşteri Çıkış</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Logo -->
+      <div class="logo-wrap">
+        <div class="logo-circle">
+          <!-- LOGO LİNKİN -->
+          <img src="LOGO_URL_BURAYA" alt="Ahmet Tekeli Logo">
+        </div>
+      </div>
+
+      <!-- Başlık -->
+      <div class="title">
+        <div class="title-main">AHMET TEKELİ</div>
+        <div class="title-sub">ERKEK KUAFÖRÜ</div>
+        <div class="rating">
+          <span>⭐</span><span>4.9</span><span>(162)</span>
+        </div>
+      </div>
+
+      <!-- Form -->
+      <form class="form" id="apptForm">
+        <div class="field">
+          <label for="name">Ad Soyad</label>
+          <input id="name" name="name" placeholder="Adınız ve Soyadınız" required>
+        </div>
+        <div class="field">
+          <label for="phone">Telefon</label>
+          <input id="phone" name="phone" inputmode="tel" placeholder="05xxxxxxxxx" required>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="barber">Berber Seçimi</label>
+            <select id="barber" required>
+              <option value="">Bir berber seçin</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="service">İşlem Seçimi</label>
+            <select id="service" required>
+              <option value="">Hizmet seçin</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="date">Tarih</label>
+            <input id="date" type="date" required>
+          </div>
+          <div class="field">
+            <label for="time">Saat Seçimi</label>
+            <input id="time" type="time" required>
+            <div class="help-text">Örn: Saç 30 dk, Saç + Sakal 60 dk aralıklı seçin.</div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="note">Not (isteğe bağlı)</label>
+          <textarea id="note" placeholder="Örn: İnce kesim, erken çıkmam lazım..."></textarea>
+        </div>
+
+        <button type="submit" class="btn-main" id="submitBtn">Randevu Al</button>
+        <button type="button" class="btn-secondary" id="cancelEditBtn" style="margin-top:6px;display:none;">Düzenlemeyi İptal Et</button>
+
+        <div class="link-row">
+          <span id="todayInfo"></span>
+          <span style="font-size:11px;color:var(--muted);">Admin: ahmetgs</span>
+        </div>
+      </form>
+    </div>
+
+    <!-- SAĞ: Müşteri Randevularım + Admin Paneli -->
+    <div class="side-card">
+      <!-- Müşteri Randevularım -->
+      <div>
+        <div class="side-section-title">
+          <span>Randevularım</span>
+          <span class="badge" id="custStatusBadge">Giriş yapmadınız</span>
+        </div>
+        <ul class="appt-list" id="custList">
+          <li class="empty">Müşteri girişi yapınca randevularınız burada görünür.</li>
+        </ul>
+      </div>
+
+      <!-- Admin paneli -->
+      <div style="margin-top:16px;border-top:1px dashed #e5e7eb;padding-top:10px;">
+        <div class="side-section-title">
+          <span>Admin Paneli</span>
+          <span class="badge chip-green" id="adminStateBadge">Pasif</span>
+        </div>
+
+        <div style="font-size:11px;color:var(--muted);">
+          Bugünkü randevular, hizmet / berber tanımları, çalışma saatleri ve randevu raporu PDF.
+        </div>
+
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="today">Bugün</button>
+          <button class="tab-btn" data-tab="services">Hizmetler</button>
+          <button class="tab-btn" data-tab="barbers">Berberler</button>
+          <button class="tab-btn" data-tab="settings">Çalışma Saatleri</button>
+          <button class="tab-btn" data-tab="reports">Rapor / PDF</button>
+        </div>
+
+        <!-- Bugün -->
+        <div class="tab-section active" id="tab-today">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <span id="todayLabel" style="font-size:11px;color:var(--muted);"></span>
+            <span class="badge" id="todayCountBadge">0 randevu</span>
+          </div>
+          <ul class="appt-list" id="adminTodayList">
+            <li class="empty">Bugün için kayıtlı randevu yok.</li>
+          </ul>
+        </div>
+
+        <!-- Hizmetler -->
+        <div class="tab-section" id="tab-services">
+          <div class="inline-form">
+            <input id="svcName" placeholder="Hizmet adı">
+            <input id="svcDuration" type="number" min="5" step="5" placeholder="Süre (dk)">
+            <input id="svcPrice" type="number" min="0" step="5" placeholder="Fiyat (₺)">
+            <button class="btn-secondary" id="svcAddBtn">Ekle</button>
+          </div>
+          <table class="small-table">
+            <thead><tr><th>Hizmet</th><th>Süre</th><th>Fiyat</th><th></th></tr></thead>
+            <tbody id="svcTableBody"></tbody>
+          </table>
+          <p style="font-size:11px;color:var(--muted);margin-top:4px;">
+            Örn: Saç 30 dk, Saç + Sakal 60 dk. Bu bilgiler formda gösterilir ve rapora girer.
+          </p>
+        </div>
+
+        <!-- Berberler -->
+        <div class="tab-section" id="tab-barbers">
+          <div class="inline-form">
+            <input id="barberName" placeholder="Berber adı">
+            <button class="btn-secondary" id="barberAddBtn">Ekle</button>
+          </div>
+          <table class="small-table">
+            <thead><tr><th>Berber</th><th></th></tr></thead>
+            <tbody id="barberTableBody"></tbody>
+          </table>
+        </div>
+
+        <!-- Çalışma saatleri -->
+        <div class="tab-section" id="tab-settings">
+          <div class="inline-form">
+            <label>Başlangıç:</label>
+            <input id="openTime" type="time">
+            <label>Bitiş:</label>
+            <input id="closeTime" type="time">
+            <button class="btn-secondary" id="saveHoursBtn">Kaydet</button>
+          </div>
+          <p style="font-size:11px;color:var(--muted);">
+            Şu an randevu formu sadece bilgi amaçlı; istersen bir sonraki adımda bu saatlere göre otomatik boş saat hesabı da ekleriz.
+          </p>
+        </div>
+
+        <!-- Rapor / PDF -->
+        <div class="tab-section" id="tab-reports">
+          <div class="inline-form">
+            <label>Başlangıç:</label>
+            <input id="repStart" type="date">
+            <label>Bitiş:</label>
+            <input id="repEnd" type="date">
+          </div>
+          <div class="inline-form">
+            <button class="btn-secondary" id="repLoadBtn">Raporu Göster</button>
+            <button class="btn-secondary" id="repPdfBtn">PDF İndir</button>
+          </div>
+          <table class="small-table">
+            <thead>
+              <tr>
+                <th>Tarih</th><th>Saat</th><th>Müşteri</th><th>Tel</th><th>Berber</th><th>Hizmet</th><th>Fiyat</th>
+              </tr>
+            </thead>
+            <tbody id="repTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">
+    <span class="toast-dot"></span>
+    <span id="toastMsg">Mesaj</span>
+  </div>
+
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-NaWTHk8E4M2n2eefsmu+6nTqvYnz0qVRkyVfC4TsKp+GYgHy71J31xYlI1cnZ6+Q9UxNX2D6V7p8cN2f+5bY4g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <!-- Firebase & App -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      getDocs,
+      deleteDoc,
+      updateDoc,
+      setDoc,
+      getDoc,
+      doc,
+      query,
+      where,
+      onSnapshot
+    } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-analytics.js";
+
+    const { jsPDF } = window.jspdf;
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAu1Uet9M0o2g44d4VIMyC_etWN7F2XKrI",
+      authDomain: "benim-berberim-8e717.firebaseapp.com",
+      projectId: "benim-berberim-8e717",
+      storageBucket: "benim-berberim-8e717.firebasestorage.app",
+      messagingSenderId: "223932865229",
+      appId: "1:223932865229:web:91b099ff105aa77164a784",
+      measurementId: "G-8MKWHR4DYS"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    getAnalytics(app);
+    const db = getFirestore(app);
+
+    const $ = (id)=>document.getElementById(id);
+
+    // Form elemanları
+    const apptForm   = $("apptForm");
+    const submitBtn  = $("submitBtn");
+    const cancelEditBtn = $("cancelEditBtn");
+    const barberSel  = $("barber");
+    const serviceSel = $("service");
+    const dateInput  = $("date");
+    const timeInput  = $("time");
+    const todayInfo  = $("todayInfo");
+
+    // Müşteri panel
+    const custToggleBtn = $("custToggleBtn");
+    const custFly       = $("custFly");
+    const custPhoneEl   = $("custPhone");
+    const custPinEl     = $("custPin");
+    const custLoginBtn  = $("custLoginBtn");
+    const custLogoutBtn2= $("custLogoutBtn2");
+    const custFlyLoggedOut = $("custFlyLoggedOut");
+    const custFlyLoggedIn  = $("custFlyLoggedIn");
+    const custFlyInfo      = $("custFlyInfo");
+    const custStatusBadge  = $("custStatusBadge");
+    const custList         = $("custList");
+
+    // Admin panel
+    const adminLoginBtn   = $("adminLoginBtn");
+    const adminBadge      = $("adminBadge");
+    const adminLogoutBtn  = $("adminLogoutBtn");
+    const adminStateBadge = $("adminStateBadge");
+    const bellEl          = $("bell");
+    const bellCountEl     = $("bellCount");
+    const todayLabelEl    = $("todayLabel");
+    const todayCountBadge = $("todayCountBadge");
+    const adminTodayList  = $("adminTodayList");
+
+    // Admin tabs
+    const tabButtons = document.querySelectorAll(".tab-btn");
+    const tabSections = {
+      today: $("tab-today"),
+      services: $("tab-services"),
+      barbers: $("tab-barbers"),
+      settings: $("tab-settings"),
+      reports: $("tab-reports")
+    };
+
+    // Hizmet / berber / rapor elemanları
+    const svcNameEl = $("svcName");
+    const svcDurationEl = $("svcDuration");
+    const svcPriceEl = $("svcPrice");
+    const svcAddBtn = $("svcAddBtn");
+    const svcTableBody = $("svcTableBody");
+
+    const barberNameEl = $("barberName");
+    const barberAddBtn = $("barberAddBtn");
+    const barberTableBody = $("barberTableBody");
+
+    const openTimeEl = $("openTime");
+    const closeTimeEl = $("closeTime");
+    const saveHoursBtn = $("saveHoursBtn");
+
+    const repStartEl = $("repStart");
+    const repEndEl   = $("repEnd");
+    const repLoadBtn = $("repLoadBtn");
+    const repPdfBtn  = $("repPdfBtn");
+    const repTableBody = $("repTableBody");
+
+    // Müşteri randevularım
+    const custTitleList = $("custTitle");
+    const custLogoutBtn = $("custLogoutBtn");
+
+    // Toast
+    const toastEl = $("toast");
+    const toastMsgEl = $("toastMsg");
+
+    // Durumlar
+    let isAdmin = false;
+    let todayUnsub = null;
+    let lastTodayCount = 0;
+    let unseenCount = 0;
+    let editingApptId = null;
+    let lastReportRows = [];
+
+    function todayKey(){
+      const d = new Date();
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth()+1).padStart(2,"0");
+      const dd = String(d.getDate()).padStart(2,"0");
+      return `${yyyy}-${mm}-${dd}`;
+    }
+    function formatDateTR(date){
+      return date.toLocaleDateString("tr-TR",{
+        day:"numeric",month:"long",weekday:"long"
+      });
+    }
+    function showToast(msg){
+      toastMsgEl.textContent = msg;
+      toastEl.classList.add("show");
+      setTimeout(()=>toastEl.classList.remove("show"),2300);
+    }
+
+    // === Tarih ve info ===
+    dateInput.value = todayKey();
+    const now = new Date();
+    todayInfo.textContent = "Bugün: " + formatDateTR(now);
+    todayLabelEl.textContent = todayInfo.textContent;
+    $("todayChip")?.textContent = todayKey();
+    repStartEl.value = todayKey();
+    repEndEl.value   = todayKey();
+
+    // === Varsayılan berber / hizmet (ilk açılış) ===
+    async function ensureDefaultData(){
+      // Eğer koleksiyonlar boşsa birkaç örnek ekle
+      const svcSnap = await getDocs(collection(db,"services"));
+      if(svcSnap.empty){
+        await addDoc(collection(db,"services"),{name:"Saç Kesim",durationMin:30,price:250});
+        await addDoc(collection(db,"services"),{name:"Saç + Sakal",durationMin:60,price:400});
+        await addDoc(collection(db,"services"),{name:"Sakal Tıraşı",durationMin:20,price:200});
+      }
+      const barbSnap = await getDocs(collection(db,"barbers"));
+      if(barbSnap.empty){
+        await addDoc(collection(db,"barbers"),{name:"Ahmet Tekeli"});
+        await addDoc(collection(db,"barbers"),{name:"Berber 2"});
+      }
+    }
+
+    async function loadServicesToUI(){
+      serviceSel.innerHTML = '<option value="">Hizmet seçin</option>';
+      svcTableBody.innerHTML = "";
+      const snap = await getDocs(collection(db,"services"));
+      snap.forEach(d=>{
+        const data = d.data();
+        const opt = document.createElement("option");
+        opt.value = d.id;
+        opt.textContent = data.name || "";
+        serviceSel.appendChild(opt);
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${data.name||""}</td>
+          <td>${data.durationMin?data.durationMin+" dk":""}</td>
+          <td>${data.price?data.price+" ₺":""}</td>
+          <td><button class="btn-small btn-del" data-svc-id="${d.id}">Sil</button></td>
+        `;
+        svcTableBody.appendChild(tr);
+      });
+    }
+
+    async function loadBarbersToUI(){
+      barberSel.innerHTML = '<option value="">Bir berber seçin</option>';
+      barberTableBody.innerHTML = "";
+      const snap = await getDocs(collection(db,"barbers"));
+      snap.forEach(d=>{
+        const data = d.data();
+        const opt = document.createElement("option");
+        opt.value = d.id;
+        opt.textContent = data.name || "";
+        barberSel.appendChild(opt);
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${data.name||""}</td>
+          <td><button class="btn-small btn-del" data-barber-id="${d.id}">Sil</button></td>
+        `;
+        barberTableBody.appendChild(tr);
+      });
+    }
+
+    async function loadHours(){
+      const docRef = doc(db,"settings","hours");
+      const snap = await getDoc(docRef);
+      if(snap.exists()){
+        const data = snap.data();
+        if(data.open)  openTimeEl.value = data.open;
+        if(data.close) closeTimeEl.value = data.close;
+      }
+    }
+
+    // === Admin state / çan ===
+    function updateBellUI(){
+      if(!isAdmin){
+        bellEl.classList.add("hidden");
+        bellCountEl.classList.add("hidden");
+        bellEl.classList.remove("bell-alert");
+        return;
+      }
+      bellEl.classList.remove("hidden");
+      if(unseenCount>0){
+        bellCountEl.textContent = unseenCount;
+        bellCountEl.classList.remove("hidden");
+        bellEl.classList.add("bell-alert");
+      }else{
+        bellCountEl.classList.add("hidden");
+        bellEl.classList.remove("bell-alert");
+      }
+    }
+    function setAdmin(state){
+      isAdmin = state;
+      if(state){
+        adminLoginBtn.classList.add("hidden");
+        adminBadge.classList.remove("hidden");
+        adminStateBadge.textContent = "Aktif";
+        adminStateBadge.classList.add("chip-green");
+        adminTodayList.parentElement.style.opacity = "1";
+        localStorage.setItem("berber_isAdmin","1");
+        startTodayListener();
+      }else{
+        adminLoginBtn.classList.remove("hidden");
+        adminBadge.classList.add("hidden");
+        adminStateBadge.textContent = "Pasif";
+        adminStateBadge.classList.remove("chip-green");
+        adminTodayList.parentElement.style.opacity = "0.6";
+        localStorage.removeItem("berber_isAdmin");
+        if(todayUnsub) todayUnsub();
+        unseenCount = 0;
+      }
+      updateBellUI();
+    }
+
+    if(localStorage.getItem("berber_isAdmin")==="1"){
+      setAdmin(true);
+    }
+
+    adminLoginBtn.addEventListener("click",()=>{
+      const pass = prompt("Admin şifresi:");
+      if(pass==="ahmetgs"){
+        setAdmin(true);
+        showToast("Admin girişi başarılı");
+      }else if(pass){
+        showToast("Hatalı şifre");
+      }
+    });
+    adminLogoutBtn.addEventListener("click",()=>{
+      setAdmin(false);
+      showToast("Admin çıkış yapıldı");
+    });
+    bellEl.addEventListener("click",()=>{
+      unseenCount = 0;
+      updateBellUI();
+    });
+
+    // === Bugünkü randevular dinleyici ===
+    function renderAdminToday(list){
+      adminTodayList.innerHTML="";
+      if(!list.length){
+        const li=document.createElement("li");
+        li.className="empty";
+        li.textContent="Bugün için kayıtlı randevu yok.";
+        adminTodayList.appendChild(li);
+      }else{
+        list.forEach(r=>{
+          const li=document.createElement("li");
+          li.className="appt-item";
+          li.innerHTML=`
+            <div class="appt-main">
+              <div class="appt-name">${r.name||"Müşteri"}</div>
+              <div class="appt-meta">${r.time||"-"} • ${r.phone||"-"} • ${r.barberName||""}</div>
+            </div>
+            <div class="appt-tag">${r.serviceName||"Hizmet"}</div>
+          `;
+          adminTodayList.appendChild(li);
+        });
+      }
+      todayCountBadge.textContent = `${list.length} randevu`;
+    }
+
+    function startTodayListener(){
+      if(todayUnsub) todayUnsub();
+      const q = query(collection(db,"appointments"), where("date","==",todayKey()));
+      todayUnsub = onSnapshot(q,(snap)=>{
+        const list=[];
+        snap.forEach(d=>list.push({id:d.id,...d.data()}));
+        list.sort((a,b)=>(a.time||"").localeCompare(b.time||""));
+        const diff = list.length - lastTodayCount;
+        if(isAdmin && diff>0){
+          unseenCount += diff;
+          updateBellUI();
+          showToast("Yeni randevu geldi");
+        }
+        lastTodayCount = list.length;
+        renderAdminToday(list);
+      },err=>{
+        console.error(err);
+        showToast("Bugünkü randevular yüklenemedi");
+      });
+    }
+
+    // === Müşteri oturumu ===
+    function getCustomer(){
+      const phone=localStorage.getItem("cust_phone");
+      const pin=localStorage.getItem("cust_pin");
+      if(phone && pin) return {phone,pin};
+      return null;
+    }
+    function setCustomer(phone,pin){
+      localStorage.setItem("cust_phone",phone);
+      localStorage.setItem("cust_pin",pin);
+    }
+    function clearCustomer(){
+      localStorage.removeItem("cust_phone");
+      localStorage.removeItem("cust_pin");
+    }
+
+    function setCustomerUI(cust){
+      if(cust){
+        custStatusBadge.textContent = cust.phone;
+        custStatusBadge.classList.add("chip-green");
+        custFlyLoggedOut.style.display="none";
+        custFlyLoggedIn.style.display="block";
+        custFlyInfo.textContent = "Giriş yaptınız: " + cust.phone;
+      }else{
+        custStatusBadge.textContent = "Giriş yapmadınız";
+        custStatusBadge.classList.remove("chip-green");
+        custFlyLoggedOut.style.display="block";
+        custFlyLoggedIn.style.display="none";
+      }
+    }
+
+    async function loadCustomerAppointments(phone){
+      custList.innerHTML="";
+      try{
+        const q = query(collection(db,"appointments"), where("phone","==",phone));
+        const snap = await getDocs(q);
+        const rows=[];
+        snap.forEach(d=>rows.push({id:d.id,...d.data()}));
+        const today = todayKey();
+        rows.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+        const upcoming = rows.filter(r=>r.date>=today);
+
+        if(!upcoming.length){
+          const li=document.createElement("li");
+          li.className="empty";
+          li.textContent="Yaklaşan randevunuz bulunmuyor.";
+          custList.appendChild(li);
+        }else{
+          upcoming.forEach(r=>{
+            const li=document.createElement("li");
+            li.className="appt-item";
+            li.innerHTML=`
+              <div class="appt-main">
+                <div class="appt-name">${r.date} • ${r.time}</div>
+                <div class="appt-meta">${r.serviceName||""} • ${r.barberName||""}</div>
+              </div>
+              <div class="appt-actions">
+                <button class="btn-small btn-edit" data-id="${r.id}">Düzenle</button>
+                <button class="btn-small btn-del" data-id="${r.id}">Sil</button>
+              </div>
+            `;
+            custList.appendChild(li);
+          });
+        }
+      }catch(err){
+        console.error(err);
+        showToast("Randevularınız getirilemedi");
+      }
+    }
+
+    custList.addEventListener("click",async(e)=>{
+      const editBtn = e.target.closest(".btn-edit");
+      const delBtn  = e.target.closest(".btn-del");
+      if(editBtn){
+        const id = editBtn.dataset.id;
+        // doc'u bul
+        const snap = await getDocs(query(collection(db,"appointments"), where("__name__","==",id)));
+        snap.forEach(d=>{
+          const r = d.data();
+          $("name").value = r.name||"";
+          $("phone").value= r.phone||"";
+          barberSel.value = r.barberId||"";
+          serviceSel.value= r.serviceId||"";
+          dateInput.value = r.date||todayKey();
+          timeInput.value = r.time||"";
+          $("note").value = r.note||"";
+        });
+        editingApptId = id;
+        submitBtn.textContent = "Randevuyu Güncelle";
+        cancelEditBtn.style.display="inline-block";
+        showToast("Randevuyu düzenliyorsunuz");
+      }
+      if(delBtn){
+        const id = delBtn.dataset.id;
+        if(!confirm("Bu randevu iptal edilsin mi?"))return;
+        try{
+          await deleteDoc(doc(db,"appointments",id));
+          showToast("Randevu iptal edildi");
+          const cust = getCustomer();
+          if(cust) loadCustomerAppointments(cust.phone);
+        }catch(err){
+          console.error(err);
+          showToast("İptal edilemedi");
+        }
+      }
+    });
+
+    cancelEditBtn.addEventListener("click",()=>{
+      editingApptId = null;
+      submitBtn.textContent = "Randevu Al";
+      cancelEditBtn.style.display="none";
+      apptForm.reset();
+      dateInput.value=todayKey();
+    });
+
+    // Müşteri giriş/çıkış
+    custToggleBtn.addEventListener("click",()=>{
+      custFly.classList.toggle("active");
+    });
+    custLoginBtn.addEventListener("click",()=>{
+      const phone = custPhoneEl.value.trim();
+      const pin   = custPinEl.value.trim();
+      if(!phone || !pin || pin.length!==4){
+        showToast("Telefon ve 4 haneli şifre girin");
+        return;
+      }
+      setCustomer(phone,pin);
+      setCustomerUI({phone,pin});
+      custFly.classList.remove("active");
+      loadCustomerAppointments(phone);
+      showToast("Müşteri girişi başarılı");
+    });
+    function customerLogout(){
+      clearCustomer();
+      setCustomerUI(null);
+      custList.innerHTML='<li class="empty">Müşteri girişi yapınca randevularınız burada görünür.</li>';
+      showToast("Müşteri çıkışı yapıldı");
+    }
+    custLogoutBtn.addEventListener("click",customerLogout);
+    custLogoutBtn2.addEventListener("click",customerLogout);
+
+    const existingCust = getCustomer();
+    if(existingCust){
+      setCustomerUI(existingCust);
+      loadCustomerAppointments(existingCust.phone);
+    }else{
+      setCustomerUI(null);
+    }
+
+    // === Randevu form submit ===
+    apptForm.addEventListener("submit",async(e)=>{
+      e.preventDefault();
+      const name  = apptForm.name.value.trim();
+      const phone = apptForm.phone.value.trim();
+      const barberId = barberSel.value;
+      const serviceId= serviceSel.value;
+      const date  = dateInput.value;
+      const time  = timeInput.value;
+      const note  = $("note").value.trim();
+
+      if(!name||!phone||!barberId||!serviceId||!date||!time){
+        showToast("Lütfen tüm alanları doldurun");
+        return;
+      }
+
+      // Hizmet & berber adını bul
+      let barberName="", serviceName="", durationMin=null, price=null;
+      const barbSnap = await getDoc(doc(db,"barbers",barberId));
+      if(barbSnap.exists()) barberName = barbSnap.data().name||"";
+      const svcSnap = await getDoc(doc(db,"services",serviceId));
+      if(svcSnap.exists()){
+        serviceName = svcSnap.data().name||"";
+        durationMin = svcSnap.data().durationMin||null;
+        price = svcSnap.data().price||null;
+      }
+
+      const customer = getCustomer();
+      const payload = {
+        name,phone,barberId,barberName,serviceId,serviceName,
+        date,time,note,durationMin,price,
+        customerPhone: customer?customer.phone:null,
+        customerPin:   customer?customer.pin:null,
+        createdAt:new Date().toISOString()
+      };
+
+      try{
+        if(editingApptId){
+          await updateDoc(doc(db,"appointments",editingApptId),payload);
+          showToast("Randevu güncellendi ✔");
+        }else{
+          await addDoc(collection(db,"appointments"),payload);
+          showToast("Randevunuz alındı ✔");
+        }
+        const cust = getCustomer();
+        if(cust && cust.phone===phone){
+          loadCustomerAppointments(phone);
+        }
+        editingApptId=null;
+        submitBtn.textContent="Randevu Al";
+        cancelEditBtn.style.display="none";
+        apptForm.reset();
+        dateInput.value=todayKey();
+      }catch(err){
+        console.error(err);
+        showToast("Kayıt sırasında hata oluştu");
+      }
+    });
+
+    // === Hizmetler ekle/sil ===
+    svcAddBtn.addEventListener("click",async()=>{
+      const name = svcNameEl.value.trim();
+      const dur  = parseInt(svcDurationEl.value,10)||null;
+      const price= parseInt(svcPriceEl.value,10)||null;
+      if(!name){showToast("Hizmet adı boş olamaz");return;}
+      try{
+        await addDoc(collection(db,"services"),{name,durationMin:dur,price});
+        svcNameEl.value="";svcDurationEl.value="";svcPriceEl.value="";
+        await loadServicesToUI();
+        showToast("Hizmet eklendi");
+      }catch(err){
+        console.error(err);
+        showToast("Hizmet eklenemedi");
+      }
+    });
+
+    svcTableBody.addEventListener("click",async(e)=>{
+      const btn=e.target.closest("[data-svc-id]");
+      if(!btn)return;
+      if(!confirm("Bu hizmet silinsin mi?"))return;
+      try{
+        await deleteDoc(doc(db,"services",btn.dataset.svcId));
+        await loadServicesToUI();
+        showToast("Hizmet silindi");
+      }catch(err){console.error(err);showToast("Silinemedi");}
+    });
+
+    // === Berberler ekle/sil ===
+    barberAddBtn.addEventListener("click",async()=>{
+      const name = barberNameEl.value.trim();
+      if(!name){showToast("Berber adı boş olamaz");return;}
+      try{
+        await addDoc(collection(db,"barbers"),{name});
+        barberNameEl.value="";
+        await loadBarbersToUI();
+        showToast("Berber eklendi");
+      }catch(err){console.error(err);showToast("Berber eklenemedi");}
+    });
+    barberTableBody.addEventListener("click",async(e)=>{
+      const btn=e.target.closest("[data-barber-id]");
+      if(!btn)return;
+      if(!confirm("Bu berber silinsin mi?"))return;
+      try{
+        await deleteDoc(doc(db,"barbers",btn.dataset.barberId));
+        await loadBarbersToUI();
+        showToast("Berber silindi");
+      }catch(err){console.error(err);showToast("Silinemedi");}
+    });
+
+    // === Çalışma saatleri ===
+    saveHoursBtn.addEventListener("click",async()=>{
+      try{
+        await setDoc(doc(db,"settings","hours"),{
+          open:openTimeEl.value||null,
+          close:closeTimeEl.value||null
+        });
+        showToast("Saatler kaydedildi");
+      }catch(err){console.error(err);showToast("Kaydedilemedi");}
+    });
+
+    // === Raporlar ===
+    async function loadReport(){
+      const start = repStartEl.value || "0000-00-00";
+      const end   = repEndEl.value   || "9999-12-31";
+      const snap = await getDocs(collection(db,"appointments"));
+      const rows=[];
+      snap.forEach(d=>{
+        const r = d.data();
+        if(r.date>=start && r.date<=end){
+          rows.push({
+            date:r.date,time:r.time||"",
+            name:r.name||"",phone:r.phone||"",
+            barberName:r.barberName||"",
+            serviceName:r.serviceName||"",
+            price:r.price||""
+          });
+        }
+      });
+      rows.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+      repTableBody.innerHTML="";
+      rows.forEach(r=>{
+        const tr=document.createElement("tr");
+        tr.innerHTML=`
+          <td>${r.date}</td>
+          <td>${r.time}</td>
+          <td>${r.name}</td>
+          <td>${r.phone}</td>
+          <td>${r.barberName}</td>
+          <td>${r.serviceName}</td>
+          <td>${r.price? r.price+" ₺":""}</td>
+        `;
+        repTableBody.appendChild(tr);
+      });
+      lastReportRows = rows;
+      showToast(rows.length+" randevu listelendi");
+    }
+
+    repLoadBtn.addEventListener("click",loadReport);
+    repPdfBtn.addEventListener("click",()=>{
+      if(!lastReportRows.length){showToast("Önce raporu listeleyin");return;}
+      const docPdf = new jsPDF();
+      docPdf.setFontSize(12);
+      docPdf.text("Ahmet Tekeli Kuaförü - Randevu Raporu",10,10);
+      docPdf.setFontSize(9);
+      docPdf.text("Tarih: "+new Date().toLocaleString("tr-TR"),10,16);
+
+      let y=24;
+      const header=["Tarih","Saat","Ad","Telefon","Berber","Hizmet","Fiyat"];
+      const rows=[header,...lastReportRows.map(r=>[
+        r.date,r.time,r.name,r.phone,r.barberName,r.serviceName,
+        r.price? (r.price+" ₺"):""
+      ])];
+      rows.forEach(row=>{
+        if(y>280){docPdf.addPage();y=10;}
+        let x=10;
+        row.forEach((cell,i)=>{
+          const text=String(cell).slice(0,22);
+          docPdf.text(text,x,y);
+          x+=28;
+        });
+        y+=6;
+      });
+      docPdf.save("randevu-raporu.pdf");
+    });
+
+    // === Tablar ===
+    tabButtons.forEach(btn=>{
+      btn.addEventListener("click",()=>{
+        tabButtons.forEach(b=>b.classList.remove("active"));
+        btn.classList.add("active");
+        const key = btn.dataset.tab;
+        Object.keys(tabSections).forEach(k=>{
+          tabSections[k].classList.toggle("active",k===key);
+        });
+      });
+    });
+
+    // === Başlangıç yüklemeleri ===
+    (async()=>{
+      await ensureDefaultData();
+      await loadServicesToUI();
+      await loadBarbersToUI();
+      await loadHours();
+      if(isAdmin) startTodayListener();
+    })();
+  </script>
+</body>
+</html>
