@@ -915,15 +915,30 @@ import { getAnalytics } from "firebase/analytics";
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+/* === FIREBASE === */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  doc,
+  getDocs,
+  setDoc,
+  deleteDoc
+} from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+
+// 🔥 DÜZELTİLMİŞ DOĞRU CONFIG (sadece storageBucket düzeltildi)
 const firebaseConfig = {
   apiKey: "AIzaSyAu1Uet9M0o2g44d4VIMyC_etWN7F2XKrI",
   authDomain: "benim-berberim-8e717.firebaseapp.com",
   projectId: "benim-berberim-8e717",
-  storageBucket: "benim-berberim-8e717.firebasestorage.app",
+  storageBucket: "benim-berberim-8e717.appspot.com",   // ← DÜZELTİLDİ !!!
   messagingSenderId: "223932865229",
-  appId: "1:223932865229:web:91b099ff105aa77164a784",
-  measurementId: "G-8MKWHR4DYS"
+  appId: "1:223932865229:web:ed142746b945bbe164a784",
+  measurementId: "G-01EWTY5KM1"
 };
+
+const fbApp = initializeApp(firebaseConfig);
+const db    = getFirestore(fbApp);
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
