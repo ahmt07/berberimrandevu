@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <title>Ahmet Tekeli Kuaförü • Online Randevu</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    :root{
+      --bg:#f5f5f7;
+      --card:#ffffff;
+      --ink:#111827;
+      --muted:#6b7280;
+      --line:#e5e7eb;
+      --gold:#d4af37;
+      --danger:#ef4444;
+      --ok:#16a34a;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{
+      font:15px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      background:var(--bg);
+      color:var(--ink);
+    }
+    .wrap{max-width:900px;margin:0 auto;padding:16px}
+    header{
+      display:flex;align-items:center;justify-content:space-between;
+      margin-bottom:16px;
+    }
+    header h1{font-size:20px}
+    header span{font-size:12px;color:var(--muted)}
+    .tabs{
+      display:flex;border-radius:999px;background:#e5e7eb;padding:3px;margin-bottom:16px;
+    }
+    .tab{
+      flex:1;text-align:center;padding:8px 10px;font-size:14px;
+      border-radius:999px;cursor:pointer;user-select:none;
+    }
+    .tab.active{background:var(--card);font-weight:600}
+    .card{
+      background:var(--card);border-radius:16px;border:1px solid var(--line);
+      padding:16px;margin-bottom:16px;
+      box-shadow:0 10px 25px rgba(15,23,42,.08);
+    }
+    label{font-size:13px;font-weight:500;display:block;margin-bottom:4px}
+    input,select{
+      width:100%;padding:8px 10px;border-radius:10px;border:1px solid var(--line);
+      font:inherit;margin-bottom:10px;background:white;
+    }
+    button{
+      border:0;border-radius:999px;padding:10px 18px;font:inherit;
+      cursor:pointer;
+    }
+    .btn-gold{background:var(--gold);color:#111827;font-weight:600;width:100%}
+    .btn-red{background:var(--danger);color:#fff;font-size:12px;padding:4px 8px;border-radius:999px}
+    .row{display:flex;gap:10px}
+    .row > div{flex:1}
+    .hint{font-size:12px;color:var(--muted);margin-bottom:8px}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th,td{border-bottom:1px solid var(--line);padding:6px 4px;text-align:left}
+    th{font-size:12px;color:var(--muted);font-weight:600}
+    .badge{
+      font-size:11px;border-radius:999px;padding:2px 6px;border:1px solid var(--line);
+      display:inline-block;
+    }
+    .status{font-size:13px;margin-top:8px}
+    .status.ok{color:var(--ok)}
+    .status.err{color:var(--danger)}
+    @media(max-width:600px){
+      header{flex-direction:column;align-items:flex-start;gap:4px}
+      .row{flex-direction:column}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Ahmet Tekeli Erkek Kuaförü</h1>
+        <span>Online randevu sisteminiz • Firebase senkron</span>
+      </div>
+      <div class="badge">v1 • Firestore</div>
+    </header>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="customer">Müşteri Randevu</div>
+      <div class="tab" data-tab="admin">Admin Paneli</div>
+    </div>
+
+    <!-- MÜŞTERİ PANELİ -->
+    <section id="customerPanel" class="card">
+      <div class="hint">Bilgilerinizi doldurun, randevunuz tüm cihazlarda aynı anda görünsün.</div>
+      <form id="randevuForm">
+        <label for="custName">Ad Soyad</label>
+        <input id="custName" required placeholder="Adınız soyadınız">
+
+        <label for="custPhone">Telefon</label>
+        <input id="custPhone" required placeholder="05XXXXXXXXX">
+
+        <div class="row">
+          <div>
+            <label for="custDate">Tarih</label>
+            <input id="custDate" type="date" required>
+          </div>
+          <div>
+            <label for="custTime">Saat</label>
+            <select id="custTime" required></select>
+          </div>
+        </div>
+
+        <label for="custService">Hizmet</label>
+        <select id="custService" required>
+          <option value="">Seçiniz</option>
+          <option value="Saç">Saç (30 dk)</option>
+          <option value="Sakal">Sakal (30 dk)</option>
+          <option value="Saç &amp; Sakal">Saç &amp; Sakal (60 dk)</option>
+          <option value="Bakım">Bakım / Diğer</option>
+        </select>
+
+        <button type="submit" class="btn-gold">Randevu Al</button>
+      </form>
+      <div id="custStatus" class="status" aria-live="polite"></div>
+    </section>
+
+    <!-- ADMIN PANELİ -->
+    <section id="adminPanel" class="card" style="display:none">
+      <div id="adminLoginBox">
+        <div class="hint">Admin girişi: sadece berber kullanımı içindir.</div>
+        <form id="adminLoginForm">
+          <label for="adminPass">Şifre</label>
+          <input id="adminPass" type="password" placeholder="Admin şifresi" required>
+          <button type="submit" class="btn-gold" style="margin-top:6px">Panele Giriş Yap</button>
+        </form>
+        <div class="hint" style="margin-top:6px">Varsayılan şifre: <b>ahmetgs</b></div>
+      </div>
+
+      <div id="adminBox" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div>
+            <div style="font-weight:600;">Güncel Randevular</div>
+            <div class="hint">Tüm telefonlardan alınan randevular anlık düşer.</div>
+          </div>
+          <button id="adminLogout" style="font-size:11px;border-radius:999px;border:1px solid var(--line);background:#f9fafb;padding:4px 10px;cursor:pointer">Çıkış</button>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Tarih</th>
+              <th>Saat</th>
+              <th>Ad</th>
+              <th>Tel</th>
+              <th>Hizmet</th>
+              <th>Sil</th>
+            </tr>
+          </thead>
+          <tbody id="randevuTableBody"></tbody>
+        </table>
+
+        <div id="adminStatus" class="status" aria-live="polite"></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- FIREBASE + APP KODU -->
+  <script type="module">
+    // Firebase modülleri
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+    import {
+      getFirestore, collection, addDoc, serverTimestamp,
+      onSnapshot, query, orderBy, deleteDoc, doc
+    } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+
+    // SENİN PROJE AYARLARIN
+    const firebaseConfig = {
+      apiKey: "AIzaSyD3S0XgKgNJLCJr3xQ-ASgr1gHz9MCou-4",
+      authDomain: "randevularim-92ac2.firebaseapp.com",
+      projectId: "randevularim-92ac2",
+      storageBucket: "randevularim-92ac2.firebasestorage.app",
+      messagingSenderId: "1092355095676",
+      appId: "1:1092355095676:web:085921b2dff9d607b7ddf9"
+    };
+
+    // Firebase başlat
+    const app = initializeApp(firebaseConfig);
+    const db  = getFirestore(app);
+    const colRef = collection(db,"appointments");
+
+    // SAAT LİSTESİ
+    const timeSelect = document.getElementById("custTime");
+    function buildTimes(){
+      timeSelect.innerHTML = "";
+      const startHour = 9;   // 09:00
+      const endHour   = 20;  // 20:00
+      for(let h=startHour; h<=endHour; h++){
+        for(let m of [0,30]){
+          const hh = String(h).padStart(2,"0");
+          const mm = String(m).padStart(2,"0");
+          const label = `${hh}:${mm}`;
+          const opt = document.createElement("option");
+          opt.value = label;
+          opt.textContent = label;
+          timeSelect.appendChild(opt);
+        }
+      }
+    }
+    buildTimes();
+
+    // TAB GEÇİŞLERİ
+    const tabs = document.querySelectorAll(".tab");
+    const customerPanel = document.getElementById("customerPanel");
+    const adminPanel    = document.getElementById("adminPanel");
+    tabs.forEach(tab=>{
+      tab.addEventListener("click", ()=>{
+        tabs.forEach(t=>t.classList.remove("active"));
+        tab.classList.add("active");
+        const which = tab.dataset.tab;
+        if(which === "customer"){
+          customerPanel.style.display="block";
+          adminPanel.style.display="none";
+        }else{
+          customerPanel.style.display="none";
+          adminPanel.style.display="block";
+        }
+      });
+    });
+
+    // MÜŞTERİ RANDEVU KAYDI
+    const randevuForm = document.getElementById("randevuForm");
+    const custStatus  = document.getElementById("custStatus");
+    const custDate    = document.getElementById("custDate");
+    const today = new Date().toISOString().split("T")[0];
+    custDate.value = today;
+    custDate.min   = today;
+
+    randevuForm.addEventListener("submit", async (e)=>{
+      e.preventDefault();
+      custStatus.textContent = "";
+      const name    = document.getElementById("custName").value.trim();
+      const phone   = document.getElementById("custPhone").value.trim();
+      const date    = custDate.value;
+      const time    = document.getElementById("custTime").value;
+      const service = document.getElementById("custService").value;
+
+      if(!name || !phone || !date || !time || !service){
+        custStatus.textContent = "Lütfen tüm alanları doldurun.";
+        custStatus.className = "status err";
+        return;
+      }
+
+      try{
+        await addDoc(colRef,{
+          name,
+          phone,
+          date,
+          time,
+          service,
+          createdAt: serverTimestamp()
+        });
+        randevuForm.reset();
+        custDate.value = today;
+        buildTimes();
+        custStatus.textContent = "Randevunuz alındı, teşekkür ederiz.";
+        custStatus.className = "status ok";
+      }catch(err){
+        console.error(err);
+        custStatus.textContent = "Hata oluştu, tekrar deneyin.";
+        custStatus.className = "status err";
+      }
+    });
+
+    // ADMIN GİRİŞ / ÇIKIŞ
+    const ADMIN_PASS = "ahmetgs";
+    const adminLoginForm = document.getElementById("adminLoginForm");
+    const adminPassInput = document.getElementById("adminPass");
+    const adminLoginBox  = document.getElementById("adminLoginBox");
+    const adminBox       = document.getElementById("adminBox");
+    const adminStatus    = document.getElementById("adminStatus");
+    const adminLogoutBtn = document.getElementById("adminLogout");
+    const tableBody      = document.getElementById("randevuTableBody");
+
+    let unsubscribe = null;
+
+    adminLoginForm.addEventListener("submit",(e)=>{
+      e.preventDefault();
+      const pass = adminPassInput.value.trim();
+      if(pass !== ADMIN_PASS){
+        adminStatus.textContent = "Şifre hatalı.";
+        adminStatus.className = "status err";
+        return;
+      }
+      adminLoginBox.style.display="none";
+      adminBox.style.display="block";
+      adminStatus.textContent = "";
+      startAdminListener();
+    });
+
+    adminLogoutBtn.addEventListener("click",()=>{
+      if(unsubscribe){unsubscribe();unsubscribe=null;}
+      tableBody.innerHTML = "";
+      adminBox.style.display="none";
+      adminLoginBox.style.display="block";
+      adminPassInput.value = "";
+      adminStatus.textContent = "Çıkış yapıldı.";
+      adminStatus.className = "status";
+    });
+
+    // ADMIN RANDEVU LİSTESİ
+    function startAdminListener(){
+      const q = query(colRef, orderBy("createdAt","desc"));
+      unsubscribe = onSnapshot(q,(snap)=>{
+        tableBody.innerHTML = "";
+        if(snap.empty){
+          adminStatus.textContent = "Henüz randevu yok.";
+          adminStatus.className = "status";
+          return;
+        }
+        adminStatus.textContent = "";
+        snap.forEach(docSnap=>{
+          const data = docSnap.data();
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${data.date || ""}</td>
+            <td>${data.time || ""}</td>
+            <td>${data.name || ""}</td>
+            <td>${data.phone || ""}</td>
+            <td>${data.service || ""}</td>
+            <td><button class="btn-red" data-id="${docSnap.id}">Sil</button></td>
+          `;
+          tableBody.appendChild(tr);
+        });
+
+        tableBody.querySelectorAll("button[data-id]").forEach(btn=>{
+          btn.addEventListener("click", async ()=>{
+            const id = btn.getAttribute("data-id");
+            if(!confirm("Bu randevuyu silmek istiyor musunuz?")) return;
+            try{
+              await deleteDoc(doc(db,"appointments",id));
+            }catch(err){
+              console.error(err);
+              alert("Silme başarısız oldu.");
+            }
+          });
+        });
+      },(err)=>{
+        console.error(err);
+        adminStatus.textContent = "Liste alınırken hata oluştu.";
+        adminStatus.className = "status err";
+      });
+    }
+  </script>
+</body>
+</html>
