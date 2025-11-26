@@ -1,0 +1,2082 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Ahmet Tekeli Kuaför • Online Randevu</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* TAM EKRAN AÇIK GRİ CAM TEMA */
+  --bg:#e5e7eb;       /* tüm ekran zemini */
+  --ink:#111827;      /* ana yazı */
+  --muted:#6b7280;    /* ikincil yazı */
+  --brand:#d4af37;    /* altın */
+  --danger:#ef4444;
+  --ok:#10b981;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+html,body{
+  font:15px/1.5 "Inter",system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+  background:var(--bg);
+  color:var(--ink);
+}
+
+/* === ARKA PLAN (TÜM EKRAN AÇIK GRİ + FLU FOTOĞRAF) === */
+.bg{
+  position:fixed;
+  inset:0;
+  z-index:-2;
+  background:
+    url("arka-plan.jpg") center/cover no-repeat,
+    radial-gradient(circle at 10% 0%,rgba(148,163,184,.4),transparent 20%);
+  filter:blur(10px);
+}
+.bg-overlay{
+  position:fixed;
+  inset:0;
+  z-index:-1;
+  /* tüm ekranı aydınlık yapan cam katman */
+  background:
+    linear-gradient(to bottom,rgba(255,255,255,.78),rgba(209,213,219,.95)),
+    radial-gradient(circle at top,rgba(255,255,255,.6),transparent 55%);
+}
+
+/* === GENEL YERLEŞİM === */
+body{
+  min-height:100vh;
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+  padding:18px 10px 28px;
+}
+
+/* dış çerçeve – hafif cam */
+.wrap{
+  width:100%;
+  max-width:420px;
+  position:relative;
+  border-radius:32px;
+  padding:18px 16px 22px;
+  background:linear-gradient(135deg,rgba(243,244,246,.8),rgba(229,231,235,.85));
+  box-shadow:
+    0 18px 55px rgba(15,23,42,.28),
+    0 0 0 1px rgba(148,163,184,.35);
+  backdrop-filter:blur(22px) saturate(140%);
+}
+
+/* === LOGO & ÜST BUTONLAR === */
+.logo-wrap{
+  display:flex;
+  justify-content:center;
+  margin-bottom:8px;
+}
+.logo-circle{
+  width:86px;
+  height:86px;
+  border-radius:999px;
+  background:url("logo.png") center/100% 100% no-repeat;
+  box-shadow:0 18px 40px rgba(0,0,0,.35);
+  border:4px solid rgba(248,250,251,.98);
+}
+
+/* üst sağ: admin & müşteri giriş */
+.top-actions{
+  position:absolute;
+  top:12px;
+  right:12px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.btn-top{
+  border-radius:999px;
+  padding:7px 13px;
+  border:1px solid rgba(209,213,219,.9);
+  cursor:pointer;
+  font-size:12px;
+  font-weight:600;
+  background:rgba(255,255,255,.96);
+  color:#111827;
+  box-shadow:0 10px 26px rgba(15,23,42,.25);
+  backdrop-filter:blur(18px);
+}
+.btn-top span{opacity:.95}
+
+/* === ANA KART === */
+.card{
+  border-radius:26px;
+  padding:16px 14px 18px;
+  border:1px solid rgba(209,213,219,.95);
+  background:linear-gradient(145deg,rgba(255,255,255,.98),rgba(243,244,246,.98));
+  box-shadow:
+    0 18px 40px rgba(15,23,42,.22),
+    0 0 0 1px rgba(148,163,184,.25);
+  color:var(--ink);
+}
+
+/* üst başlık */
+.card-header{
+  text-align:center;
+  margin-bottom:14px;
+}
+.brand-title{
+  font-size:24px;
+  font-weight:800;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+}
+.brand-sub{
+  margin-top:2px;
+  font-size:11px;
+  letter-spacing:.25em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.rating{
+  margin-top:8px;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 10px;
+  border-radius:999px;
+  font-size:11px;
+  background:rgba(255,255,255,.96);
+  border:1px solid rgba(209,213,219,.95);
+  box-shadow:0 10px 24px rgba(15,23,42,.2);
+}
+.rating .star{
+  width:12px;
+  height:12px;
+  clip-path:polygon(50% 0%,63% 38%,100% 38%,69% 59%,82% 100%,50% 76%,18% 100%,31% 59%,0 38%,37% 38%);
+  background:var(--brand);
+}
+
+/* === FORM GENEL === */
+.section-title{
+  font-size:12px;
+  font-weight:600;
+  margin:8px 0 4px;
+  color:#111827;
+}
+.input,
+.select,
+.date-input{
+  width:100%;
+  border-radius:13px;
+  padding:8px 11px;
+  border:1px solid rgba(209,213,219,.95);
+  background:linear-gradient(135deg,rgba(255,255,255,.99),rgba(249,250,251,.99));
+  color:#0f172a;
+  font-size:13px;
+}
+.input::placeholder{color:#9ca3af}
+
+/* tarih kutusunu biraz ufalt */
+.date-input{
+  padding:6px 9px;
+  font-size:10px;
+}
+
+.row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+.row > *{
+  flex:1;
+  min-width:0;
+}
+
+/* === BERBER SEÇİMİ – CHIPLER === */
+.barber-choices{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+.barber-chip{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:5px 9px;
+  border-radius:999px;
+  background:linear-gradient(135deg,rgba(243,244,246,1),rgba(229,231,235,1));
+  border:1px solid rgba(209,213,219,1);
+  cursor:pointer;
+  font-size:11px;
+  box-shadow:0 6px 14px rgba(15,23,42,.12);
+}
+.barber-chip.selected{
+  background:linear-gradient(135deg,#fde68a,var(--brand));
+  color:#111827;
+  border-color:transparent;
+}
+.barber-avatar{
+  width:24px;
+  height:24px;
+  border-radius:999px;
+  overflow:hidden;
+  flex-shrink:0;
+  background:rgba(31,41,55,.08);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:10px;
+  font-weight:700;
+  text-transform:uppercase;
+}
+.barber-avatar img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+/* === SAAT GRID === */
+.slot-grid{
+  margin-top:6px;
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:7px;
+}
+.slot{
+  border-radius:12px;
+  padding:7px 0;
+  border:1px solid rgba(209,213,219,1);
+  background:rgba(255,255,255,.99);
+  color:#111827;
+  font-weight:600;
+  font-size:11px;
+  cursor:pointer;
+  box-shadow:0 10px 22px rgba(15,23,42,.15);
+}
+.slot.selected{
+  background:linear-gradient(135deg,#fde68a,var(--brand));
+  color:#111827;
+  border-color:transparent;
+}
+.slot.disabled{
+  opacity:.28;
+  pointer-events:none;
+}
+
+/* === RANDEVU AL BUTONU === */
+.btn-book{
+  width:100%;
+  margin-top:14px;
+  border-radius:999px;
+  padding:11px 18px;
+  border:none;
+  cursor:pointer;
+  font-size:13px;
+  font-weight:800;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  background:linear-gradient(135deg,#fef3c7,#facc15,var(--brand));
+  color:#111827;
+  box-shadow:
+    0 18px 42px rgba(0,0,0,.18),
+    0 0 0 1px rgba(180,148,60,.55);
+}
+
+/* küçük açıklama */
+.helper{
+  margin-top:6px;
+  font-size:11px;
+  color:var(--muted);
+}
+
+/* === LİSTELER === */
+.app-list{
+  list-style:none;
+  margin-top:4px;
+}
+.app-item{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:space-between;
+  gap:6px;
+  padding:7px 7px;
+  border-radius:13px;
+  border:1px solid rgba(148,163,184,.7);
+  background:radial-gradient(circle at top,rgba(15,23,42,.96),rgba(15,23,42,.98));
+  font-size:11px;
+  backdrop-filter:blur(14px);
+  color:#e5e7eb;
+}
+.app-main{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.app-title{font-weight:600;}
+.app-meta{color:#cbd5f5;}
+.app-actions{
+  display:flex;
+  gap:5px;
+  align-items:center;
+}
+.btn-mini{
+  border-radius:999px;
+  border:none;
+  padding:4px 9px;
+  font-size:10px;
+  cursor:pointer;
+  font-weight:600;
+}
+.btn-mini.edit{
+  background:rgba(16,185,129,.12);
+  color:var(--ok);
+  border:1px solid rgba(16,185,129,.7);
+}
+.btn-mini.del{
+  background:rgba(239,68,68,.12);
+  color:var(--danger);
+  border:1px solid rgba(248,113,113,.7);
+}
+.btn-mini.wp{
+  background:rgba(34,197,94,.12);
+  color:#22c55e;
+  border:1px solid rgba(34,197,94,.7);
+}
+.btn-mini.note{
+  background:rgba(59,130,246,.12);
+  color:#60a5fa;
+  border:1px solid rgba(59,130,246,.7);
+}
+
+/* panel */
+.panel{
+  margin-top:10px;
+  background:radial-gradient(circle at top,rgba(15,23,42,.96),rgba(15,23,42,.99));
+  border-radius:20px;
+  padding:9px 9px 10px;
+  border:1px solid rgba(148,163,184,.6);
+  backdrop-filter:blur(16px);
+  color:#e5e7eb;
+}
+
+/* === MODAL === */
+.modal-backdrop{
+  position:fixed;
+  inset:0;
+  background:rgba(15,23,42,.82);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:30;
+}
+.modal{
+  width:100%;
+  max-width:380px;
+  background:radial-gradient(circle at top,rgba(15,23,42,.96),rgba(15,23,42,.99));
+  border-radius:24px;
+  padding:14px 14px 14px;
+  border:1px solid rgba(148,163,184,.7);
+  box-shadow:0 24px 70px rgba(0,0,0,.9);
+  backdrop-filter:blur(22px);
+  color:#e5e7eb;
+}
+.modal-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:8px;
+}
+.modal-title{font-size:14px;font-weight:700;}
+.modal-close{
+  border:none;
+  background:none;
+  color:#9ca3af;
+  font-size:20px;
+  cursor:pointer;
+}
+
+/* modal içi */
+.tabs{
+  display:flex;
+  gap:6px;
+  margin-bottom:10px;
+}
+.tab-btn{
+  flex:1;
+  border-radius:999px;
+  border:1px solid rgba(148,163,184,.7);
+  background:rgba(15,23,42,.9);
+  color:#9ca3af;
+  padding:6px 0;
+  font-size:12px;
+  font-weight:600;
+  cursor:pointer;
+}
+.tab-btn.active{
+  background:linear-gradient(135deg,#facc15,var(--brand));
+  color:#111827;
+  border-color:transparent;
+}
+
+.btn-full{
+  width:100%;
+  margin-top:9px;
+  padding:9px 0;
+  border-radius:999px;
+  border:none;
+  background:linear-gradient(135deg,#fef3c7,#facc15,var(--brand));
+  color:#111827;
+  font-size:13px;
+  font-weight:700;
+  cursor:pointer;
+  box-shadow:0 14px 40px rgba(0,0,0,.85);
+}
+
+/* === ADMIN TABS === */
+.admin-tabs{
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+  margin-bottom:9px;
+}
+.admin-tab{
+  flex:1;
+  border-radius:999px;
+  border:1px solid rgba(148,163,184,.7);
+  background:rgba(15,23,42,.9);
+  color:#9ca3af;
+  padding:5px 0;
+  font-size:11px;
+  font-weight:600;
+  cursor:pointer;
+}
+.admin-tab.active{
+  background:linear-gradient(135deg,#facc15,var(--brand));
+  color:#111827;
+  border-color:transparent;
+}
+.admin-section{display:none;}
+.admin-section.active{display:block;}
+
+/* admin filtre satırı */
+.admin-filter-row{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  margin:6px 0 10px;
+}
+
+/* kapanış günleri paneli */
+.closed-panel-title{
+  margin-top:10px;
+  font-size:11px;
+  font-weight:600;
+  color:#e5e7eb;
+}
+.closed-date-item{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:4px 6px;
+  border-radius:10px;
+  border:1px solid rgba(148,163,184,.6);
+  margin-top:4px;
+  font-size:11px;
+  color:#e5e7eb;
+}
+.closed-date-item span{color:#cbd5f5;}
+
+/* === TOAST === */
+.toast{
+  position:fixed;
+  left:50%;
+  top:14px;
+  transform:translateX(-50%);
+  background:radial-gradient(circle at top,rgba(15,23,42,.96),rgba(15,23,42,.99));
+  color:#f9fafb;
+  padding:7px 13px;
+  border-radius:999px;
+  font-size:12px;
+  border:1px solid rgba(148,163,184,.75);
+  box-shadow:0 20px 50px rgba(0,0,0,.9);
+  display:none;
+  z-index:50;
+}
+.toast.ok{border-color:rgba(16,185,129,.7);}
+.toast.err{border-color:rgba(248,113,113,.9);}
+
+/* === BERBER ÇALIŞMA SAATİ MODAL === */
+.schedule-wrapper{
+  max-height:65vh;
+  overflow:auto;
+  padding-right:4px;
+}
+.schedule-row{
+  border-radius:14px;
+  border:1px solid rgba(148,163,184,.6);
+  padding:6px 7px;
+  margin-bottom:6px;
+  background:radial-gradient(circle at top,rgba(15,23,42,.97),rgba(15,23,42,1));
+}
+.schedule-row-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-size:11px;
+  margin-bottom:4px;
+}
+.schedule-day-name{
+  font-weight:600;
+}
+.schedule-intervals{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  margin-top:3px;
+}
+.schedule-interval{
+  display:flex;
+  gap:4px;
+  align-items:center;
+}
+.schedule-interval select{
+  flex:1;
+  border-radius:10px;
+  padding:4px 6px;
+  border:1px solid rgba(148,163,184,.7);
+  background:rgba(15,23,42,.95);
+  color:#e5e7eb;
+  font-size:11px;
+}
+.schedule-interval button{
+  border:none;
+  border-radius:999px;
+  padding:3px 7px;
+  font-size:10px;
+  cursor:pointer;
+  background:rgba(239,68,68,.12);
+  color:var(--danger);
+  border:1px solid rgba(248,113,113,.7);
+}
+.btn-add-interval{
+  margin-top:4px;
+  border-radius:999px;
+  border:none;
+  padding:3px 8px;
+  font-size:10px;
+  cursor:pointer;
+  background:rgba(59,130,246,.12);
+  color:#60a5fa;
+  border:1px solid rgba(59,130,246,.7);
+}
+
+.day-active-label{
+  font-size:10px;
+  display:flex;
+  align-items:center;
+  gap:4px;
+}
+.day-active-label input{
+  accent-color:var(--brand);
+}
+
+/* === RESPONSIVE === */
+@media(max-width:480px){
+  .wrap{
+    padding:16px 10px 18px;
+    border-radius:28px;
+  }
+  .card{
+    padding:14px 10px 16px;
+  }
+  .brand-title{font-size:22px;}
+
+  .slot-grid{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:6px;
+  }
+
+  .date-input{
+    font-size:11px;
+    padding:5px 8px;
+  }
+}
+
+/* büyük ekranda admin filtreleri yan yana */
+@media(min-width:600px){
+  .admin-filter-row{
+    flex-direction:row;
+    align-items:flex-end;
+    gap:12px;
+  }
+}
+
+/* === YAZDIRMA (PDF) MODU – aktif admin sekmesini yazdır === */
+@media print{
+  body{
+    background:#ffffff;
+    padding:0;
+  }
+
+  .bg,
+  .bg-overlay,
+  .wrap > .logo-wrap,
+  .top-actions,
+  .card,
+  #customerModal,
+  #scheduleModal,
+  .toast{
+    display:none !important;
+  }
+
+  #adminModal{
+    position:static;
+    display:block !important;
+    background:#ffffff;
+  }
+  #adminModal .modal{
+    max-width:100%;
+    border:none;
+    box-shadow:none;
+    padding:10px;
+    background:#ffffff;
+  }
+
+  #adminLoginArea{
+    display:none !important;
+  }
+  #adminPanelArea{
+    display:block !important;
+    max-height:none;
+    overflow:visible;
+  }
+
+  .admin-tabs{
+    display:none !important;
+  }
+
+  .admin-section{
+    display:none !important;
+  }
+  .admin-section.active{
+    display:block !important;
+  }
+
+  .btn-full{
+    display:none !important;
+  }
+
+  .app-item{
+    box-shadow:none;
+    border:1px solid #ddd;
+    background:#fff;
+    color:#000;
+  }
+  .app-title,
+  .app-meta{
+    color:#000;
+  }
+}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="bg-overlay"></div>
+
+<div class="wrap">
+  <div class="logo-wrap">
+    <div class="logo-circle"></div>
+  </div>
+
+  <div class="top-actions">
+    <button class="btn-top" type="button" id="btnAdminOpen">
+      <span id="adminBtnLabel">Admin Girişi</span>
+    </button>
+    <button class="btn-top" type="button" id="btnCustomerOpen">
+      <span id="customerBtnLabel">Müşteri Girişi</span>
+    </button>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="brand-title">AHMET TEKELİ</div>
+      <div class="brand-sub">ERKEK KUAFÖRÜ</div>
+      <div class="rating">
+        <div class="star"></div>
+        <span>⭐️ONLİNE RANDEVU⭐️</span>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title">Ad Soyad</div>
+      <input class="input" id="nameInput" placeholder="Adınız ve Soyadınız">
+
+      <div class="section-title">Telefon</div>
+      <input class="input" id="phoneInput" placeholder="05xxxxxxxxx">
+
+      <div class="row">
+        <div>
+          <div class="section-title">Berber Seçimi</div>
+          <div class="barber-choices" id="barberChoices"></div>
+          <select class="select" id="barberSelect" style="display:none;"></select>
+        </div>
+        <div>
+          <div class="section-title">İşlem Seçimi</div>
+          <select class="select" id="serviceSelect"></select>
+        </div>
+      </div>
+
+      <div class="section-title" style="margin-top:8px;">Tarih</div>
+      <input type="date" class="date-input" id="dateInput">
+
+      <div class="section-title" style="margin-top:8px;">Saat Seçimi</div>
+      <div class="slot-grid" id="slotGrid"></div>
+
+      <button class="btn-book" id="btnBook">RANDEVU AL</button>
+      <div class="helper" id="bookingHelper">
+        Randevu almak için önce müşteri girişi yapmalısın. Müşteri panelinden kayıt olabilirsin.
+      </div>
+      <div class="helper" id="dayInfoHelper"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Müşteri Paneli Modal -->
+<div class="modal-backdrop" id="customerModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Müşteri Paneli</div>
+      <button class="modal-close" type="button" id="modalClose">&times;</button>
+    </div>
+
+    <div id="customerLoggedBox" style="display:none;">
+      <div class="helper" id="customerLoggedText"></div>
+      <div id="customerAppsBox" class="panel" style="margin-top:8px;display:none;">
+        <div class="section-title">Randevularım</div>
+        <ul class="app-list" id="appListModal"></ul>
+      </div>
+      <button class="btn-full" id="btnCustomerLogout" style="margin-top:8px;background:rgba(31,41,55,1);color:#f9fafb;">
+        Çıkış Yap
+      </button>
+    </div>
+
+    <div class="tabs" id="tabsRow">
+      <button class="tab-btn active" type="button" data-tab="login">Giriş Yap</button>
+      <button class="tab-btn" type="button" data-tab="register">Kayıt Ol</button>
+    </div>
+
+    <div id="loginTab">
+      <div class="section-title">Telefon</div>
+      <input class="input" id="loginPhone" placeholder="05xxxxxxxxx">
+      <div class="section-title">Şifre</div>
+      <input class="input" id="loginPass" type="password" placeholder="••••••">
+      <button class="btn-full" id="btnLogin">Giriş Yap</button>
+      <div class="helper">İlk defa geliyorsan üstten <b>Kayıt Ol</b> sekmesine geç.</div>
+    </div>
+
+    <div id="registerTab" style="display:none;">
+      <div class="section-title">Ad Soyad</div>
+      <input class="input" id="regName" placeholder="Adınız Soyadınız">
+      <div class="section-title">Telefon</div>
+      <input class="input" id="regPhone" placeholder="05xxxxxxxxx">
+      <div class="section-title">Şifre</div>
+      <input class="input" id="regPass" type="password" placeholder="En az 4 karakter">
+      <button class="btn-full" id="btnRegister">Kayıt Ol</button>
+      <div class="helper">Kayıt sonrası müşteri panelinden <b>Randevularım</b> kısmına erişirsin.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Panel Modal -->
+<div class="modal-backdrop" id="adminModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Admin Paneli</div>
+      <button class="modal-close" type="button" id="adminModalClose">&times;</button>
+    </div>
+
+    <div id="adminLoginArea">
+      <div class="section-title">Telefon</div>
+      <input class="input" id="adminPhone" placeholder="Admin telefon">
+      <div class="section-title">Şifre</div>
+      <input class="input" id="adminPass" type="password" placeholder="Şifre">
+      <button class="btn-full" id="btnAdminLogin">Admin Giriş Yap</button>
+      <div class="helper">Bu alan sadece işletme sahibi içindir.</div>
+    </div>
+
+    <div id="adminPanelArea" style="display:none;max-height:70vh;overflow:auto;padding-right:4px;">
+      <div class="admin-tabs">
+        <button class="admin-tab active" data-admin-section="adminSectionRapor">Raporlar</button>
+        <button class="admin-tab" data-admin-section="adminSectionRandevu">Randevular</button>
+        <button class="admin-tab" data-admin-section="adminSectionHizmet">Hizmet Yönetimi</button>
+        <button class="admin-tab" data-admin-section="adminSectionBerber">Berber Yönetimi & Çalışma Saatleri</button>
+      </div>
+
+      <!-- RAPORLAR -->
+      <div class="admin-section active" id="adminSectionRapor">
+        <div class="section-title">Raporlar</div>
+        <ul class="app-list" id="reportList"></ul>
+
+        <button class="btn-full" id="btnPrintReports" style="margin-top:8px;">
+          Raporları PDF Olarak Çıkar
+        </button>
+      </div>
+
+      <!-- RANDEVU YÖNETİMİ -->
+      <div class="admin-section" id="adminSectionRandevu">
+        <div class="section-title">Randevu Yönetimi</div>
+        <div class="admin-filter-row">
+          <div>
+            <div class="section-title">Tarih Filtresi</div>
+            <input type="date" class="date-input" id="adminDateFilter">
+          </div>
+          <div>
+            <div class="section-title">Berber Filtresi</div>
+            <select class="select" id="adminBarberFilter"></select>
+          </div>
+        </div>
+        <ul class="app-list" id="adminAppList"></ul>
+        <div class="helper" id="adminCountInfo"></div>
+
+        <button class="btn-full" id="btnPrintAppointments" style="margin-top:8px;">
+          Randevu Listesini PDF Olarak Çıkar
+        </button>
+
+        <div class="closed-panel-title">Kapalı Günler (Özel tatil / dükkân kapalı)</div>
+        <div class="row" style="margin-top:4px;">
+          <input type="date" class="date-input" id="closedDateInput">
+          <button class="btn-full" id="btnAddClosedDate" style="margin-top:0;">Kapalı Gün Ekle</button>
+        </div>
+        <div id="closedDateList"></div>
+      </div>
+
+      <!-- HİZMET YÖNETİMİ -->
+      <div class="admin-section" id="adminSectionHizmet">
+        <div class="section-title">Hizmet Yönetimi</div>
+        <ul class="app-list" id="serviceList"></ul>
+        <div class="row" style="margin-top:6px;">
+          <input class="input" id="newServiceName" placeholder="Hizmet adı (Saç Kesim)">
+          <input class="input" id="newServicePrice" type="number" min="0" step="10" placeholder="Fiyat">
+          <input class="input" id="newServiceDuration" type="number" min="15" step="15" placeholder="Süre (dk)">
+        </div>
+        <button class="btn-full" id="btnAddService" style="margin-top:6px;">Hizmet Ekle</button>
+      </div>
+
+      <!-- BERBER YÖNETİMİ & ÇALIŞMA SAATLERİ -->
+      <div class="admin-section" id="adminSectionBerber">
+        <div class="section-title">Berber Yönetimi & Çalışma Saatleri</div>
+        <ul class="app-list" id="barberList"></ul>
+
+        <div class="section-title" style="margin-top:10px;">Yeni Berber</div>
+        <input class="input" id="newBarberName" placeholder="Örn: Ahmet TEKELİ">
+        <div class="section-title">Fotoğraf Yükle (isteğe bağlı)</div>
+        <input class="input" id="newBarberPhotoFile" type="file" accept="image/*" style="padding:6px 10px;">
+        <button class="btn-full" id="btnAddBarber" style="margin-top:6px;">Berber Ekle</button>
+      </div>
+
+      <button class="btn-full" id="btnAdminLogout" style="margin-top:14px;background:rgba(31,41,55,1);color:#f9fafb;">
+        Admin Çıkış
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- BERBER ÇALIŞMA SAATİ MODAL -->
+<div class="modal-backdrop" id="scheduleModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="scheduleModalTitle">Çalışma Saatleri</div>
+      <button class="modal-close" type="button" id="scheduleModalClose">&times;</button>
+    </div>
+    <div class="schedule-wrapper" id="scheduleWrapper"></div>
+    <button class="btn-full" id="btnSaveSchedule">Çalışma Saatlerini Kaydet</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- JAVASCRIPT -->
+<script type="module">
+/* === FIREBASE === */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  doc,
+  getDocs,
+  setDoc,
+  deleteDoc
+} from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+
+// Senin verdiğin config
+const firebaseConfig = {
+  apiKey: "AIzaSyAu1Uet9M0o2g44d4VIMyC_etWN7F2XKrI",
+  authDomain: "benim-berberim-8e717.firebaseapp.com",
+  projectId: "benim-berberim-8e717",
+  storageBucket: "benim-berberim-8e717.firebasestorage.app",
+  messagingSenderId: "223932865229",
+  appId: "1:223932865229:web:ed142746b945bbe164a784",
+  measurementId: "G-01EWTY5KM1"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db    = getFirestore(fbApp);
+
+/* --- Firestore yardımcıları (Sadece RANDEVU için) --- */
+async function loadAppointmentsFromFirestore(){
+  try{
+    const snap = await getDocs(collection(db,"appointments"));
+    const arr = [];
+    snap.forEach(d => {
+      // doc.data() içinde bizim alanlar var
+      arr.push(d.data());
+    });
+    setAppointments(arr);
+    renderAdminAppointments();
+    renderMyAppointments();
+    renderReports();
+    renderSlots();
+    console.log("Firestore'dan randevular yüklendi:", arr.length);
+  }catch(err){
+    console.error("Firestore randevu yükleme hatası:", err);
+  }
+}
+
+async function saveAppointmentToFirestore(app){
+  try{
+    await setDoc(doc(db,"appointments", app.id), app);
+    console.log("Randevu Firestore'a kaydedildi:", app.id);
+  }catch(err){
+    console.error("Randevu Firestore'a kaydedilirken hata:", err);
+  }
+}
+
+async function deleteAppointmentFromFirestore(id){
+  try{
+    await deleteDoc(doc(db,"appointments", id));
+    console.log("Randevu Firestore'dan silindi:", id);
+  }catch(err){
+    console.error("Randevu Firestore'dan silinirken hata:", err);
+  }
+}
+
+/* === SABİTLER === */
+const SLOT_TIMES = [
+  "00:00","00:30","01:00","01:30",
+  "02:00","02:30","03:00","03:30",
+  "04:00","04:30","05:00","05:30",
+  "06:00","06:30","07:00","07:30",
+  "08:00","08:30","09:00","09:30",
+  "10:00","10:30","11:00","11:30",
+  "12:00","12:30","13:00","13:30",
+  "14:00","14:30","15:00","15:30",
+  "16:00","16:30","17:00","17:30",
+  "18:00","18:30","19:00","19:30",
+  "20:00","20:30","21:00","21:30",
+  "22:00","22:30","23:00","23:30"
+];
+
+const ADMIN_PHONE = "05356749243";
+const ADMIN_PASS  = "ahmetgs";
+const MAX_DAYS_AHEAD = 30;
+
+const DAY_NAMES = ["Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar"];
+
+/* === DOM === */
+const slotGrid  = document.getElementById("slotGrid");
+const dateInput = document.getElementById("dateInput");
+const btnBook   = document.getElementById("btnBook");
+const nameInput = document.getElementById("nameInput");
+const phoneInput= document.getElementById("phoneInput");
+const barberSel = document.getElementById("barberSelect");
+const barberChoicesEl = document.getElementById("barberChoices");
+const servSel   = document.getElementById("serviceSelect");
+const toastEl   = document.getElementById("toast");
+const bookingHelper = document.getElementById("bookingHelper");
+const dayInfoHelper = document.getElementById("dayInfoHelper");
+
+/* hizmet / berber */
+const serviceListEl  = document.getElementById("serviceList");
+const newServiceNameEl  = document.getElementById("newServiceName");
+const newServicePriceEl = document.getElementById("newServicePrice");
+const newServiceDurationEl = document.getElementById("newServiceDuration");
+const btnAddService  = document.getElementById("btnAddService");
+
+const barberListEl   = document.getElementById("barberList");
+const newBarberNameEl= document.getElementById("newBarberName");
+const newBarberPhotoFileEl= document.getElementById("newBarberPhotoFile");
+const btnAddBarber   = document.getElementById("btnAddBarber");
+
+/* admin randevu */
+const adminDateFilter   = document.getElementById("adminDateFilter");
+const adminBarberFilter = document.getElementById("adminBarberFilter");
+const adminAppList      = document.getElementById("adminAppList");
+const adminCountInfo    = document.getElementById("adminCountInfo");
+const reportListEl      = document.getElementById("reportList");
+
+/* kapalı günler */
+const closedDateInput   = document.getElementById("closedDateInput");
+const btnAddClosedDate  = document.getElementById("btnAddClosedDate");
+const closedDateList    = document.getElementById("closedDateList");
+
+/* müşteri modal */
+const customerModal      = document.getElementById("customerModal");
+const btnCustomerOpen    = document.getElementById("btnCustomerOpen");
+const modalClose         = document.getElementById("modalClose");
+const tabBtns            = document.querySelectorAll(".tab-btn");
+const loginTab           = document.getElementById("loginTab");
+const registerTab        = document.getElementById("registerTab");
+const btnLogin           = document.getElementById("btnLogin");
+const btnRegister        = document.getElementById("btnRegister");
+const customerLoggedBox  = document.getElementById("customerLoggedBox");
+const customerLoggedText = document.getElementById("customerLoggedText");
+const btnCustomerLogout  = document.getElementById("btnCustomerLogout");
+const customerBtnLabel   = document.getElementById("customerBtnLabel");
+const customerAppsBox    = document.getElementById("customerAppsBox");
+const appListModal       = document.getElementById("appListModal");
+const tabsRow            = document.getElementById("tabsRow");
+
+/* admin modal */
+const adminModalEl     = document.getElementById("adminModal");
+const btnAdminOpen     = document.getElementById("btnAdminOpen");
+const adminModalClose  = document.getElementById("adminModalClose");
+const adminLoginArea   = document.getElementById("adminLoginArea");
+const adminPanelArea   = document.getElementById("adminPanelArea");
+const btnAdminLogin    = document.getElementById("btnAdminLogin");
+const btnAdminLogout   = document.getElementById("btnAdminLogout");
+const adminBtnLabel    = document.getElementById("adminBtnLabel");
+const adminTabBtns     = document.querySelectorAll(".admin-tab");
+const adminSections    = document.querySelectorAll(".admin-section");
+
+/* çalışma saati modal */
+const scheduleModal    = document.getElementById("scheduleModal");
+const scheduleModalTitle = document.getElementById("scheduleModalTitle");
+const scheduleModalClose = document.getElementById("scheduleModalClose");
+const scheduleWrapper  = document.getElementById("scheduleWrapper");
+const btnSaveSchedule  = document.getElementById("btnSaveSchedule");
+
+/* PDF butonları */
+const btnPrintReports = document.getElementById("btnPrintReports");
+const btnPrintAppointments = document.getElementById("btnPrintAppointments");
+
+let currentScheduleBarberId = null;
+
+/* state */
+let selectedTime = null;
+let editingId = null;
+
+/* === TOAST === */
+function showToast(msg,type="ok"){
+  toastEl.textContent=msg;
+  toastEl.className="toast "+type;
+  toastEl.style.display="block";
+  setTimeout(()=>toastEl.style.display="none",2600);
+}
+
+/* === STORAGE (localStorage sadece cache olarak devam ediyor) === */
+function getCustomers(){return JSON.parse(localStorage.getItem("atekeli_customers") || "[]");}
+function setCustomers(a){localStorage.setItem("atekeli_customers",JSON.stringify(a));}
+
+function getAppointments(){return JSON.parse(localStorage.getItem("atekeli_appointments") || "[]");}
+function setAppointments(a){localStorage.setItem("atekeli_appointments",JSON.stringify(a));}
+
+function getBarbers(){return JSON.parse(localStorage.getItem("atekeli_barbers") || "[]");}
+function setBarbers(a){localStorage.setItem("atekeli_barbers",JSON.stringify(a));}
+
+function getServices(){return JSON.parse(localStorage.getItem("atekeli_services") || "[]");}
+function setServices(a){localStorage.setItem("atekeli_services",JSON.stringify(a));}
+
+function getClosedDates(){return JSON.parse(localStorage.getItem("atekeli_closed_dates") || "[]");}
+function setClosedDates(a){localStorage.setItem("atekeli_closed_dates",JSON.stringify(a));}
+
+function getCurrentCustomer(){
+  const phone = localStorage.getItem("atekeli_current_phone");
+  if(!phone) return null;
+  return getCustomers().find(c=>c.phone===phone) || null;
+}
+function setCurrentCustomer(phone){
+  if(phone) localStorage.setItem("atekeli_current_phone",phone);
+  else localStorage.removeItem("atekeli_current_phone");
+}
+function isAdminLogged(){return localStorage.getItem("atekeli_admin_logged")==="1";}
+function setAdminLogged(v){
+  if(v) localStorage.setItem("atekeli_admin_logged","1");
+  else localStorage.removeItem("atekeli_admin_logged");
+  updateAdminButton();
+}
+function getAppointmentBarberKey(a){
+  if(a.barberId) return a.barberId;
+  if(a.barber) return a.barber;
+  return "";
+}
+function formatDateTR(iso){
+  if(!iso) return "";
+  const m=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+  const [y,mo,d]=iso.split("-");
+  return `${Number(d)} ${m[Number(mo)-1]} ${y}`;
+}
+function formatDateShortTR(iso){
+  if(!iso) return "";
+  const [y,m,d]=iso.split("-");
+  return `${d}.${m}.${y}`;
+}
+function timeIndex(time){
+  return SLOT_TIMES.indexOf(time);
+}
+
+/* === TARİH ARALIĞI === */
+function setDateLimits(){
+  const today = new Date();
+  const min = today.toISOString().slice(0,10);
+  const maxDate = new Date(today.getTime()+MAX_DAYS_AHEAD*24*60*60*1000);
+  const max = maxDate.toISOString().slice(0,10);
+  dateInput.min = min;
+  dateInput.max = max;
+}
+
+/* === WEEKDAY (0=PAZARTESİ) === */
+function getWeekdayIndex(dateStr){
+  if(!dateStr) return 0;
+  const d = new Date(dateStr+"T00:00:00");
+  const jsDay = d.getDay(); // 0 = Pazar
+  return (jsDay + 6) % 7;   // 0 = Pazartesi
+}
+
+/* === DEFAULT DATA === */
+function ensureDefaultBarbers(){
+  let list=getBarbers();
+  if(!list.length){
+    const schedule={};
+    for(let i=0;i<7;i++){
+      schedule[i]=[{start:"09:00",end:"21:00"}];
+    }
+    list=[{
+      id:"b1",
+      name:"Ahmet TEKELİ",
+      photo:"",
+      startSlot:"09:00",
+      endSlot:"21:00",
+      weeklySchedule:schedule
+    }];
+    setBarbers(list);
+  }else{
+    let changed=false;
+    list=list.map(b=>{
+      if(!b.weeklySchedule){
+        changed=true;
+        const schedule={};
+        for(let i=0;i<7;i++){
+          schedule[i]=[{start:b.startSlot||"09:00",end:b.endSlot||"21:00"}];
+        }
+        return {...b,weeklySchedule:schedule};
+      }
+      return b;
+    });
+    if(changed) setBarbers(list);
+  }
+}
+
+function ensureDefaultServices(){
+  let s=getServices();
+  if(!s.length){
+    s=[
+      {id:"s1",name:"Saç Kesim",price:400,duration:30},
+      {id:"s2",name:"Saç ve Sakal",price:600,duration:60},
+      {id:"s3",name:"Saç + Sakal + Ağda",price:750,duration:75}
+    ];
+    setServices(s);
+  }else{
+    let changed=false;
+    s=s.map(x=>{
+      if(!x.duration){
+        changed=true;
+        return {...x,duration:30};
+      }
+      return x;
+    });
+    if(changed) setServices(s);
+  }
+}
+
+/* WEEKLY SCHEDULE HELPER */
+function getWeeklyScheduleForBarber(barber){
+  if(!barber.weeklySchedule){
+    const schedule={};
+    for(let i=0;i<7;i++){
+      schedule[i]=[{start:barber.startSlot||"09:00",end:barber.endSlot||"21:00"}];
+    }
+    barber.weeklySchedule=schedule;
+  }
+  return barber.weeklySchedule;
+}
+
+/* HİZMET SÜRESİ */
+function getServiceDurationMin(serviceId){
+  const services=getServices();
+  const svc=services.find(s=>s.id===serviceId);
+  return svc && svc.duration ? svc.duration : 30;
+}
+function getServiceSlotCount(serviceId){
+  const dur=getServiceDurationMin(serviceId);
+  return Math.max(1,Math.ceil(dur/30));
+}
+function appointmentSlotRange(app){
+  const startIdx=timeIndex(app.time);
+  const count=app.serviceId ? getServiceSlotCount(app.serviceId) : 1;
+  return {start:startIdx,end:startIdx+count-1};
+}
+function rangesOverlap(a,b){
+  return a.start<=b.end && b.start<=a.end;
+}
+function isRangeInsideIntervals(range, intervals){
+  if(!intervals || !intervals.length) return false;
+  return intervals.some(interval=>{
+    const s = timeIndex(interval.start);
+    const e = timeIndex(interval.end);
+    if(s===-1 || e===-1) return false;
+    return range.start>=s && range.end<=e;
+  });
+}
+
+/* ÇAKIŞMA: eski randevu 16:30, 60 dk ise => 16:30 ve 17:00 bloklu */
+function clashesWithAppointment(newStartIdx, newServiceId, app){
+  const oldStartIdx = timeIndex(app.time);
+  if(oldStartIdx === -1) return false;
+  const oldSlots = app.serviceId ? getServiceSlotCount(app.serviceId) : 1;
+  const lastBlockedIdx = oldStartIdx + oldSlots - 1;
+  return newStartIdx >= oldStartIdx && newStartIdx <= lastBlockedIdx;
+}
+
+/* === KAPALI GÜNLER === */
+function renderClosedDatesAdmin(){
+  const list=getClosedDates().sort();
+  closedDateList.innerHTML="";
+  if(!list.length){
+    closedDateList.innerHTML='<div class="helper">Tanımlı kapalı gün yok.</div>';
+    return;
+  }
+  list.forEach(d=>{
+    const div=document.createElement("div");
+    div.className="closed-date-item";
+    const span=document.createElement("span");
+    span.textContent=formatDateTR(d);
+    const btn=document.createElement("button");
+    btn.className="btn-mini del";
+    btn.textContent="Sil";
+    btn.onclick=()=>{
+      const rest=getClosedDates().filter(x=>x!==d);
+      setClosedDates(rest);
+      renderClosedDatesAdmin();
+      renderSlots();
+      showToast("Kapalı gün kaldırıldı.");
+    };
+    div.appendChild(span);
+    div.appendChild(btn);
+    closedDateList.appendChild(div);
+  });
+}
+btnAddClosedDate.onclick=()=>{
+  const d=closedDateInput.value;
+  if(!d){showToast("Tarih seç.","err");return;}
+  let list=getClosedDates();
+  if(list.includes(d)){showToast("Bu tarih zaten kapalı.","err");return;}
+  list.push(d);setClosedDates(list);
+  closedDateInput.value="";
+  renderClosedDatesAdmin();
+  renderSlots();
+  showToast("Kapalı gün eklendi.");
+};
+
+/* WHATSAPP MESAJI (butonlardan isteğe bağlı) */
+function openWhatsAppForAppointment(app, actionText="Randevu Bilgisi"){
+  let raw = (app.phone || "").replace(/\D/g,"");
+  if(raw.startsWith("0")) raw = raw.slice(1);
+  if(raw.length<10){
+    showToast("Telefon numarası WhatsApp için uygun değil.","err");
+    return;
+  }
+  const wpPhone = "90"+raw;
+  const priceText = app.servicePrice ? `\nÜcret: ${app.servicePrice}₺` : "";
+  const noteText = app.note ? `\nNot: ${app.note}` : "";
+  const msg = encodeURIComponent(
+    `Ahmet Tekeli Erkek Kuaförü\n${actionText}:\nTarih: ${formatDateTR(app.date)}\nSaat: ${app.time}\nBerber: ${app.barberName || app.barber || "Berber"}\nİşlem: ${app.serviceName || app.service || "Hizmet"}${priceText}${noteText}`
+  );
+  window.open(`https://wa.me/${wpPhone}?text=${msg}`,"_blank");
+}
+
+/* BARBER UI */
+function initialsFromName(name){
+  if(!name) return "?";
+  const parts=name.trim().split(/\s+/);
+  if(parts.length===1) return parts[0].slice(0,2).toUpperCase();
+  return (parts[0][0]+parts[1][0]).toUpperCase();
+}
+function renderBarberSelect(){
+  const list=getBarbers();
+  barberSel.innerHTML="";
+  list.forEach(b=>{
+    const opt=document.createElement("option");
+    opt.value=b.id; opt.textContent=b.name;
+    barberSel.appendChild(opt);
+  });
+  barberChoicesEl.innerHTML="";
+  list.forEach(b=>{
+    const chip=document.createElement("div");
+    chip.className="barber-chip";chip.dataset.id=b.id;
+    const avatar=document.createElement("div");
+    avatar.className="barber-avatar";
+    if(b.photo){
+      const img=document.createElement("img");
+      img.src=b.photo;img.alt=b.name;
+      avatar.appendChild(img);
+    }else avatar.textContent=initialsFromName(b.name);
+    const label=document.createElement("span");
+    label.textContent=b.name;
+    chip.appendChild(avatar);chip.appendChild(label);
+    chip.onclick=()=>{
+      barberSel.value=b.id;
+      document.querySelectorAll(".barber-chip").forEach(c=>c.classList.remove("selected"));
+      chip.classList.add("selected");renderSlots();
+    };
+    barberChoicesEl.appendChild(chip);
+  });
+  const currentId=barberSel.value||(list[0]&&list[0].id);
+  if(currentId){
+    barberSel.value=currentId;
+    const sel=document.querySelector(`.barber-chip[data-id="${currentId}"]`);
+    if(sel) sel.classList.add("selected");
+  }
+}
+
+/* ADMIN BARBER FILTER + LIST */
+function renderAdminBarberFilter(){
+  const list=getBarbers();
+  adminBarberFilter.innerHTML="";
+  const allOpt=document.createElement("option");
+  allOpt.value="";allOpt.textContent="Tüm Berberler";
+  adminBarberFilter.appendChild(allOpt);
+  list.forEach(b=>{
+    const o=document.createElement("option");
+    o.value=b.id;o.textContent=b.name;
+    adminBarberFilter.appendChild(o);
+  });
+}
+function renderBarbersAdmin(){
+  const list=getBarbers();
+  const apps=getAppointments();
+  barberListEl.innerHTML="";
+  if(!list.length){
+    barberListEl.innerHTML="<li class='app-item'><span class='app-meta'>Hiç berber tanımlı değil.</span></li>";
+    return;
+  }
+  list.forEach(b=>{
+    const li=document.createElement("li");li.className="app-item";
+    const main=document.createElement("div");main.className="app-main";
+    const title=document.createElement("div");title.className="app-title";title.textContent=b.name;
+    const count=apps.filter(a=>getAppointmentBarberKey(a)===b.id||getAppointmentBarberKey(a)===b.name).length;
+    const schedule=getWeeklyScheduleForBarber(b);
+    const weekday=new Date().getDay();
+    const idx=(weekday+6)%7;
+    const todayIntervals=schedule[idx]||[];
+    const todayText = todayIntervals.length
+      ? todayIntervals.map(iv=>`${iv.start}-${iv.end}`).join(", ")
+      : "Bugün kapalı";
+    const meta=document.createElement("div");meta.className="app-meta";
+    meta.textContent=`Toplam ${count} randevu • Bugün: ${todayText}`;
+    main.appendChild(title);main.appendChild(meta);
+
+    const actions=document.createElement("div");actions.className="app-actions";
+    const btnSchedule=document.createElement("button");
+    btnSchedule.className="btn-mini edit";
+    btnSchedule.textContent="Saat Düzenle";
+    btnSchedule.onclick=()=>openScheduleModal(b.id);
+
+    const btnDel=document.createElement("button");
+    btnDel.className="btn-mini del";
+    btnDel.textContent="Sil";
+    btnDel.onclick=()=>{
+      const all=getBarbers();
+      if(all.length<=1){showToast("En az bir berber kalmalı.","err");return;}
+      if(!confirm(`${b.name} ve tüm randevularını silmek istiyor musun?`))return;
+      setBarbers(all.filter(x=>x.id!==b.id));
+      let appsAll=getAppointments();
+      appsAll=appsAll.filter(a=>!(getAppointmentBarberKey(a)===b.id||getAppointmentBarberKey(a)===b.name));
+      setAppointments(appsAll);
+      // randevular silindi, Firestore'dan da sil
+      appsAll.forEach(a=>deleteAppointmentFromFirestore(a.id));
+      renderBarberSelect();renderSlots();renderAdminAppointments();renderMyAppointments();renderBarbersAdmin();renderAdminBarberFilter();renderReports();
+      showToast("Berber ve randevuları silindi.");
+    };
+    actions.appendChild(btnSchedule);
+    actions.appendChild(btnDel);
+    li.appendChild(main);li.appendChild(actions);barberListEl.appendChild(li);
+  });
+}
+function finishAddBarber(name,photo){
+  let list=getBarbers();
+  if(list.some(b=>b.name.toLowerCase()===name.toLowerCase())){showToast("Bu isimde berber var.","err");return;}
+  const schedule={};
+  for(let i=0;i<7;i++){
+    schedule[i]=[{start:"09:00",end:"21:00"}];
+  }
+  list.push({id:"b"+Date.now(),name,photo:photo||"",startSlot:"09:00",endSlot:"21:00",weeklySchedule:schedule});
+  setBarbers(list);
+  newBarberNameEl.value="";newBarberPhotoFileEl.value="";
+  renderBarberSelect();renderBarbersAdmin();renderAdminBarberFilter();renderSlots();showToast("Berber eklendi.");
+}
+btnAddBarber.onclick=()=>{
+  const name=newBarberNameEl.value.trim();
+  const file=newBarberPhotoFileEl.files[0];
+  if(!name){showToast("Berber ismini yaz.","err");return;}
+  if(!file){finishAddBarber(name,null);return;}
+  const r=new FileReader();
+  r.onload=e=>finishAddBarber(name,e.target.result);
+  r.onerror=()=>showToast("Fotoğraf okunurken hata.","err");
+  r.readAsDataURL(file);
+};
+
+/* HİZMETLER */
+function renderServiceSelect(){
+  const s=getServices();
+  servSel.innerHTML="";
+  const first=document.createElement("option");first.value="";first.textContent="Seçiniz";servSel.appendChild(first);
+  s.forEach(x=>{
+    const o=document.createElement("option");
+    const dur=x.duration || 30;
+    o.value=x.id;o.textContent=`${x.name} ${x.price}₺ • ${dur} dk`;servSel.appendChild(o);
+  });
+}
+function renderServicesAdmin(){
+  const s=getServices();serviceListEl.innerHTML="";
+  if(!s.length){serviceListEl.innerHTML="<li class='app-item'><span class='app-meta'>Hiç hizmet yok.</span></li>";return;}
+  s.forEach(x=>{
+    const li=document.createElement("li");li.className="app-item";
+    const main=document.createElement("div");main.className="app-main";
+    const t=document.createElement("div");t.className="app-title";t.textContent=x.name;
+    const dur=x.duration || 30;
+    const m=document.createElement("div");m.className="app-meta";m.textContent=`${x.price}₺ • ${dur} dk`;
+    main.appendChild(t);main.appendChild(m);
+    const actions=document.createElement("div");actions.className="app-actions";
+    const btnDel=document.createElement("button");btnDel.className="btn-mini del";btnDel.textContent="Sil";
+    btnDel.onclick=()=>{
+      if(!confirm(`${x.name} silinsin mi?`))return;
+      setServices(getServices().filter(sv=>sv.id!==x.id));renderServicesAdmin();renderServiceSelect();showToast("Hizmet silindi.");
+    };
+    actions.appendChild(btnDel);li.appendChild(main);li.appendChild(actions);serviceListEl.appendChild(li);
+  });
+}
+btnAddService.onclick=()=>{
+  const name=newServiceNameEl.value.trim();
+  const price=parseInt(newServicePriceEl.value,10);
+  const duration=parseInt(newServiceDurationEl.value,10);
+  if(!name||isNaN(price)||price<=0||isNaN(duration)||duration<=0){showToast("Hizmet adı, fiyat ve süreyi doğru gir.","err");return;}
+  let list=getServices();
+  if(list.some(s=>s.name.toLowerCase()===name.toLowerCase())){showToast("Bu hizmet var.","err");return;}
+  list.push({id:"s"+Date.now(),name,price,duration});setServices(list);
+  newServiceNameEl.value="";newServicePriceEl.value="";newServiceDurationEl.value="";
+  renderServicesAdmin();renderServiceSelect();showToast("Hizmet eklendi.");
+};
+
+/* === SLOT RENDER === */
+function renderSlots(){
+  const date = dateInput.value;
+  const barberId = barberSel.value;
+  const apps = getAppointments();
+  const barbers = getBarbers();
+  const barber = barbers.find(b => b.id === barberId) || barbers[0];
+  const closedDates = getClosedDates();
+
+  slotGrid.innerHTML = "";
+  selectedTime = null;
+  dayInfoHelper.textContent = "";
+
+  if (!date) {
+    dayInfoHelper.textContent = "Lütfen tarih seçin.";
+    return;
+  }
+
+  // işletme için tamamen kapalı gün
+  if (closedDates.includes(date)) {
+    dayInfoHelper.textContent = "Bu tarih işletme için kapalı gün olarak işaretlenmiş.";
+    return;
+  }
+
+  // berberin o güne ait tanımlı çalışma dilimleri
+  const schedule = barber ? getWeeklyScheduleForBarber(barber) : null;
+  const dayIndex = getWeekdayIndex(date); // 0 = Pazartesi
+  const intervalsForDay = schedule && schedule[dayIndex] ? schedule[dayIndex] : [];
+
+  const currentServiceId = servSel.value;
+  const neededSlots = currentServiceId ? getServiceSlotCount(currentServiceId) : 1;
+
+  if (!intervalsForDay.length) {
+    dayInfoHelper.textContent = "Seçtiğiniz berber bugün için çalışma saati tanımlamamış.";
+    return;
+  }
+
+  // sadece o gün tanımlı çalışma aralığı kadar slot göster
+  let minStartIdx = SLOT_TIMES.length - 1;
+  let maxEndIdx   = 0;
+
+  intervalsForDay.forEach(iv => {
+    const sIdx = timeIndex(iv.start);
+    const eIdx = timeIndex(iv.end);
+    if (sIdx === -1 || eIdx === -1) return;
+    if (sIdx < minStartIdx) minStartIdx = sIdx;
+    if (eIdx > maxEndIdx)   maxEndIdx   = eIdx;
+  });
+
+  if (minStartIdx > maxEndIdx) {
+    dayInfoHelper.textContent = "Bu gün için geçerli saat aralığı bulunamadı.";
+    return;
+  }
+
+  for (let i = minStartIdx; i <= maxEndIdx; i++) {
+    const t = SLOT_TIMES[i];
+    const btn = document.createElement("button");
+    btn.className = "slot";
+    btn.textContent = t;
+    btn.dataset.time = t;
+
+    const newRange = { start: i, end: i + neededSlots - 1 };
+    let disabled = false;
+
+    if (newRange.end >= SLOT_TIMES.length) disabled = true;
+    if (!isRangeInsideIntervals(newRange, intervalsForDay)) disabled = true;
+
+    const clash = apps.some(a => {
+      if (a.date !== date) return false;
+      if (getAppointmentBarberKey(a) !== barberId) return false;
+      if (a.id === editingId) return false;
+      return clashesWithAppointment(i, currentServiceId, a);
+    });
+    if (clash) disabled = true;
+
+    if (disabled) {
+      btn.classList.add("disabled");
+      btn.disabled = true;
+    }
+
+    btn.onclick = () => {
+      if (btn.disabled) return;
+      document.querySelectorAll(".slot").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      selectedTime = t;
+    };
+
+    slotGrid.appendChild(btn);
+  }
+}
+
+/* === RAPORLAR (telefonlu detay liste dahil) === */
+function renderReports(){
+  if(!isAdminLogged())return;
+  const appsAll = getAppointments().slice().sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+  reportListEl.innerHTML="";
+  if(!appsAll.length){
+    reportListEl.innerHTML="<li class='app-item'><span class='app-meta'>Henüz randevu yok.</span></li>";
+    return;
+  }
+
+  const today=new Date().toISOString().slice(0,10);
+  const total=appsAll.length;
+  const todayCount=appsAll.filter(a=>a.date===today).length;
+  const barbers=getBarbers();
+  const perBarber={};
+  appsAll.forEach(a=>{const k=getAppointmentBarberKey(a);perBarber[k]=(perBarber[k]||0)+1;});
+
+  // Özet 1: Toplam randevu
+  const liTotal=document.createElement("li");
+  liTotal.className="app-item";
+  liTotal.innerHTML=`<div class="app-main"><div class="app-title">Toplam Randevu</div><div class="app-meta">${total} adet</div></div>`;
+  reportListEl.appendChild(liTotal);
+
+  // Özet 2: Bugün
+  const liToday=document.createElement("li");
+  liToday.className="app-item";
+  liToday.innerHTML=`<div class="app-main"><div class="app-title">Bugünkü Randevular</div><div class="app-meta">${todayCount} adet (${formatDateTR(today)})</div></div>`;
+  reportListEl.appendChild(liToday);
+
+  // Özet 3: Berber bazlı
+  Object.keys(perBarber).forEach(k=>{
+    const b=barbers.find(x=>x.id===k||x.name===k);
+    const name=b?b.name:k||"Berber";
+    const c=perBarber[k];
+    const li=document.createElement("li");
+    li.className="app-item";
+    li.innerHTML=`<div class="app-main"><div class="app-title">${name}</div><div class="app-meta">Toplam ${c} randevu</div></div>`;
+    reportListEl.appendChild(li);
+  });
+
+  // Detaylı randevu listesi (isim + telefon dahil)
+  const liHeader=document.createElement("li");
+  liHeader.className="app-item";
+  liHeader.innerHTML=`<div class="app-main"><div class="app-title">Detaylı Randevu Listesi</div><div class="app-meta">Tarih • Saat • Berber • Müşteri (Telefon) • Hizmet</div></div>`;
+  reportListEl.appendChild(liHeader);
+
+  appsAll.forEach(a=>{
+    const li=document.createElement("li");
+    li.className="app-item";
+    const main=document.createElement("div");
+    main.className="app-main";
+    const bName=a.barberName||a.barber||"Berber";
+    const sLabel=a.serviceName||a.service||"Hizmet";
+    const price=a.servicePrice?` • ${a.servicePrice}₺`:"";
+    const t=document.createElement("div");
+    t.className="app-title";
+    t.textContent=`${formatDateTR(a.date)} • ${a.time} • ${bName}`;
+    const m=document.createElement("div");
+    m.className="app-meta";
+    m.textContent=`${a.name} (${a.phone}) • ${sLabel}${price}`;
+    main.appendChild(t);
+    main.appendChild(m);
+    if(a.note){
+      const n=document.createElement("div");
+      n.className="app-meta";
+      n.textContent="Not: "+a.note;
+      main.appendChild(n);
+    }
+    li.appendChild(main);
+    reportListEl.appendChild(li);
+  });
+}
+
+/* RANDEVU KAYDET – Firebase + localStorage */
+btnBook.onclick=()=>{
+  const currentCustomer = getCurrentCustomer();
+  if(!currentCustomer){
+    showToast("Randevu almak için önce müşteri girişi yapmalısın.","err");
+    customerModal.style.display="flex";
+    return;
+  }
+
+  const name=currentCustomer.name;
+  const phone=currentCustomer.phone;
+  const barberId=barberSel.value;
+  const serviceId=servSel.value;
+  const date=dateInput.value;
+  const time=selectedTime;
+
+  if(!barberId||!serviceId||!date||!time){
+    showToast("Lütfen berber, hizmet, tarih ve saati seç.","err");return;
+  }
+
+  const barbers=getBarbers();
+  const barberObj=barbers.find(b=>b.id===barberId);
+  const barberName=barberObj?barberObj.name:"";
+  const services=getServices();
+  const svc=services.find(s=>s.id===serviceId);
+  const serviceName=svc?svc.name:"Hizmet";
+  const servicePrice=svc?svc.price:null;
+
+  const apps=getAppointments();
+  const startIdx=timeIndex(time);
+
+  const clash = apps.some(a=>{
+    if(a.date!==date) return false;
+    if(getAppointmentBarberKey(a)!==barberId) return false;
+    if(a.id===editingId) return false;
+    return clashesWithAppointment(startIdx, serviceId, a);
+  });
+  if(clash){
+    showToast("Bu saat aralığında bu berbere randevu var, başka saat seç.","err");
+    renderSlots();
+    return;
+  }
+
+  const isEdit=!!editingId;
+  if(isEdit){
+    const idx=apps.findIndex(a=>a.id===editingId);
+    if(idx>-1){
+      apps[idx]={...apps[idx],name,phone,barberId,barberName,serviceId,serviceName,servicePrice,date,time};
+      setAppointments(apps);
+      saveAppointmentToFirestore(apps[idx]); // Firebase güncelle
+      showToast(`Randevunuz güncellendi: ${formatDateTR(date)} • ${time}`);
+    }
+    editingId=null;btnBook.textContent="RANDEVU AL";
+  }else{
+    const id="r"+Date.now();
+    const newApp={id,name,phone,barberId,barberName,serviceId,serviceName,servicePrice,date,time,note:""};
+    apps.push(newApp);
+    setAppointments(apps);
+    saveAppointmentToFirestore(newApp); // Firebase'e yeni kayıt
+    showToast(`Randevunuz oluşturuldu: ${formatDateTR(date)} • ${time} - Lütfen randevunuza geç kalmayınız.`);
+  }
+  renderMyAppointments();renderAdminAppointments();renderReports();renderSlots();
+};
+
+/* MÜŞTERİ PANELİ */
+function updateCustomerButton(){
+  const c=getCurrentCustomer();
+  customerBtnLabel.textContent=c?"Müşteri Paneli":"Müşteri Girişi";
+}
+function applyCustomerToForm(){
+  const c=getCurrentCustomer();
+  if(!c){
+    bookingHelper.textContent="Randevu almak için önce müşteri girişi yapmalısın. Müşteri panelinden kayıt olabilirsin.";
+    updateCustomerButton();return;
+  }
+  nameInput.value=c.name;phoneInput.value=c.phone;
+  bookingHelper.textContent="Randevularını müşteri panelinden görebilir, düzenleyebilir ve silebilirsin.";
+  updateCustomerButton();
+}
+btnCustomerOpen.onclick=()=>{
+  const c=getCurrentCustomer();
+  customerModal.style.display="flex";
+  if(c){
+    customerLoggedBox.style.display="block";
+    customerLoggedText.innerHTML=`<b>${c.name}</b> olarak giriş yaptın.`;
+    tabsRow.style.display="none";loginTab.style.display="none";registerTab.style.display="none";
+  }else{
+    customerLoggedBox.style.display="none";customerAppsBox.style.display="none";
+    tabsRow.style.display="flex";loginTab.style.display="block";registerTab.style.display="none";
+    tabBtns.forEach(b=>{b.classList.toggle("active",b.dataset.tab==="login");});
+  }
+  renderMyAppointments();
+};
+modalClose.onclick=()=>{customerModal.style.display="none";};
+tabBtns.forEach(btn=>{
+  btn.onclick=()=>{
+    tabBtns.forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    if(btn.dataset.tab==="login"){loginTab.style.display="block";registerTab.style.display="none";}
+    else{loginTab.style.display="none";registerTab.style.display="block";}
+  };
+});
+btnRegister.onclick=()=>{
+  const name=document.getElementById("regName").value.trim();
+  const phone=document.getElementById("regPhone").value.trim();
+  const pass=document.getElementById("regPass").value;
+  if(!name||!phone||pass.length<4){showToast("Bilgileri eksiksiz gir.","err");return;}
+  const customers=getCustomers();
+  if(customers.find(c=>c.phone===phone)){showToast("Bu telefon ile kayıt var.","err");return;}
+  customers.push({name,phone,pass});setCustomers(customers);setCurrentCustomer(phone);
+  applyCustomerToForm();renderMyAppointments();customerModal.style.display="none";showToast("Kayıt tamam, giriş yapıldı.");
+};
+btnLogin.onclick=()=>{
+  const phone=document.getElementById("loginPhone").value.trim();
+  const pass=document.getElementById("loginPass").value;
+  const c=getCustomers().find(x=>x.phone===phone&&x.pass===pass);
+  if(!c){showToast("Telefon veya şifre hatalı.","err");return;}
+  setCurrentCustomer(c.phone);applyCustomerToForm();renderMyAppointments();customerModal.style.display="none";showToast("Giriş yapıldı.");
+};
+btnCustomerLogout.onclick=()=>{
+  setCurrentCustomer(null);applyCustomerToForm();renderMyAppointments();
+  customerLoggedBox.style.display="none";tabsRow.style.display="flex";loginTab.style.display="block";registerTab.style.display="none";
+  customerModal.style.display="none";showToast("Müşteri çıkışı yapıldı.");
+};
+
+function editAppointmentNote(appId){
+  const apps=getAppointments();
+  const idx=apps.findIndex(a=>a.id===appId);
+  if(idx===-1) return;
+  const currentNote=apps[idx].note || "";
+  const newNote=prompt("Randevu notu (boş bırakıp kaydedersen silinir):",currentNote);
+  if(newNote===null) return;
+  apps[idx].note=newNote.trim();
+  setAppointments(apps);
+  saveAppointmentToFirestore(apps[idx]); // notu da Firebase'e yaz
+  renderAdminAppointments();
+  renderMyAppointments();
+  showToast("Not güncellendi.");
+}
+
+/* MÜŞTERİ RANDEVULARIM */
+function renderMyAppointments(){
+  const c=getCurrentCustomer();appListModal.innerHTML="";
+  if(!c){customerAppsBox.style.display="none";return;}
+  const list=getAppointments().filter(a=>a.phone===c.phone).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+  if(!list.length){customerAppsBox.style.display="block";appListModal.innerHTML="<li class='app-item'><span class='app-meta'>Kayıtlı randevun yok.</span></li>";return;}
+  customerAppsBox.style.display="block";
+  list.forEach(a=>{
+    const li=document.createElement("li");li.className="app-item";
+    const main=document.createElement("div");main.className="app-main";
+    const t=document.createElement("div");t.className="app-title";t.textContent=`${formatDateTR(a.date)} • ${a.time}`;
+    const barberName=a.barberName||a.barber||"Berber";
+    const serviceLabel=a.serviceName||a.service||"Hizmet";
+    const priceText=a.servicePrice?` • ${a.servicePrice}₺`:"";
+    const m=document.createElement("div");m.className="app-meta";m.textContent=`${barberName} • ${serviceLabel}${priceText}`;
+    main.appendChild(t);main.appendChild(m);
+    if(a.note){
+      const n=document.createElement("div");
+      n.className="app-meta";
+      n.textContent="Not: "+a.note;
+      main.appendChild(n);
+    }
+    const actions=document.createElement("div");actions.className="app-actions";
+    const btnE=document.createElement("button");btnE.className="btn-mini edit";btnE.textContent="Düzenle";
+    btnE.onclick=()=>{
+      nameInput.value=a.name;phoneInput.value=a.phone;
+      const barbers=getBarbers();const key=getAppointmentBarberKey(a);
+      const found=barbers.find(b=>b.id===key||b.name===key);
+      if(found)barberSel.value=found.id;else if(barbers[0])barberSel.value=barbers[0].id;
+      document.querySelectorAll(".barber-chip").forEach(cChip=>{cChip.classList.toggle("selected",cChip.dataset.id===barberSel.value);});
+      const services=getServices();
+      if(a.serviceId&&services.some(s=>s.id===a.serviceId))servSel.value=a.serviceId;else servSel.value="";
+      dateInput.value=a.date;editingId=a.id;selectedTime=a.time;renderSlots();
+      document.querySelectorAll(".slot").forEach(b=>{if(b.dataset.time===a.time)b.classList.add("selected");});
+      btnBook.textContent="RANDEVUYU GÜNCELLE";
+      window.scrollTo({top:0,behavior:"smooth"});customerModal.style.display="none";
+    };
+    const btnD=document.createElement("button");btnD.className="btn-mini del";btnD.textContent="Sil";
+    btnD.onclick=()=>{
+      if(!confirm("Bu randevuyu silmek istiyor musun?"))return;
+      setAppointments(getAppointments().filter(x=>x.id!==a.id));
+      deleteAppointmentFromFirestore(a.id); // Firebase'den de sil
+      renderMyAppointments();renderAdminAppointments();renderReports();renderSlots();showToast("Randevu silindi.");
+    };
+    const btnW=document.createElement("button");btnW.className="btn-mini wp";btnW.textContent="WP";
+    btnW.onclick=()=>openWhatsAppForAppointment(a,"Randevu Hatırlatma");
+    actions.appendChild(btnE);actions.appendChild(btnD);actions.appendChild(btnW);
+    li.appendChild(main);li.appendChild(actions);appListModal.appendChild(li);
+  });
+}
+
+/* ADMIN PANEL */
+function updateAdminButton(){adminBtnLabel.textContent=isAdminLogged()?"Admin Paneli":"Admin Girişi";}
+btnAdminOpen.onclick=()=>{
+  adminModalEl.style.display="flex";
+  if(isAdminLogged()){
+    adminLoginArea.style.display="none";adminPanelArea.style.display="block";
+    renderAdminAppointments();renderBarbersAdmin();renderAdminBarberFilter();renderServicesAdmin();renderReports();renderClosedDatesAdmin();showAdminSection("adminSectionRapor");
+  }else{
+    adminLoginArea.style.display="block";adminPanelArea.style.display="none";
+  }
+};
+adminModalClose.onclick=()=>{adminModalEl.style.display="none";};
+btnAdminLogin.onclick=async ()=>{
+  const phone=document.getElementById("adminPhone").value.trim();
+  const pass=document.getElementById("adminPass").value;
+  if(phone===ADMIN_PHONE&&pass===ADMIN_PASS){
+    setAdminLogged(true);
+    // Admin girişinde Firestore'dan randevuları çek
+    await loadAppointmentsFromFirestore();
+    adminLoginArea.style.display="none";adminPanelArea.style.display="block";
+    renderAdminAppointments();renderBarbersAdmin();renderAdminBarberFilter();renderServicesAdmin();renderReports();renderClosedDatesAdmin();showAdminSection("adminSectionRapor");
+    showToast("Admin girişi başarılı.");
+  }else showToast("Admin bilgileri hatalı.","err");
+};
+btnAdminLogout.onclick=()=>{
+  setAdminLogged(false);adminPanelArea.style.display="none";adminLoginArea.style.display="block";adminModalEl.style.display="none";showToast("Admin çıkışı yapıldı.");
+};
+function showAdminSection(id){
+  adminSections.forEach(s=>s.classList.toggle("active",s.id===id));
+  adminTabBtns.forEach(b=>b.classList.toggle("active",b.dataset.adminSection===id));
+}
+adminTabBtns.forEach(b=>b.onclick=()=>showAdminSection(b.dataset.adminSection));
+
+function renderAdminAppointments(){
+  if(!isAdminLogged())return;
+  const all=getAppointments();
+  const d=adminDateFilter.value;
+  const bf=adminBarberFilter.value;
+  let list=all.slice();
+  if(d)list=list.filter(a=>a.date===d);
+  if(bf)list=list.filter(a=>getAppointmentBarberKey(a)===bf);
+  list.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+  adminAppList.innerHTML="";
+  if(!list.length){adminAppList.innerHTML="<li class='app-item'><span class='app-meta'>Filtreye uygun randevu yok.</span></li>";adminCountInfo.textContent="0 randevu listeleniyor.";return;}
+  list.forEach(a=>{
+    const li=document.createElement("li");li.className="app-item";
+    const bName=a.barberName||a.barber||"Berber";
+    const sLabel=a.serviceName||a.service||"Hizmet";
+    const price=a.servicePrice?` • ${a.servicePrice}₺`:"";
+    const main=document.createElement("div");main.className="app-main";
+    const t=document.createElement("div");t.className="app-title";t.textContent=`${formatDateTR(a.date)} • ${a.time} • ${bName}`;
+    const m=document.createElement("div");m.className="app-meta";m.textContent=`${a.name} (${a.phone}) • ${sLabel}${price}`;
+    main.appendChild(t);main.appendChild(m);
+    if(a.note){
+      const n=document.createElement("div");n.className="app-meta";n.textContent="Not: "+a.note;
+      main.appendChild(n);
+    }
+    const actions=document.createElement("div");actions.className="app-actions";
+    const btnNote=document.createElement("button");btnNote.className="btn-mini note";btnNote.textContent="Not";
+    btnNote.onclick=()=>editAppointmentNote(a.id);
+    const btnW=document.createElement("button");btnW.className="btn-mini wp";btnW.textContent="WP";
+    btnW.onclick=()=>openWhatsAppForAppointment(a,"Randevu Hatırlatma");
+    const btnD=document.createElement("button");btnD.className="btn-mini del";btnD.textContent="Sil";
+    btnD.onclick=()=>{
+      if(!confirm("Bu randevuyu silmek istiyor musun?"))return;
+      setAppointments(getAppointments().filter(x=>x.id!==a.id));
+      deleteAppointmentFromFirestore(a.id);
+      renderAdminAppointments();renderMyAppointments();renderReports();renderSlots();showToast("Randevu silindi.");
+    };
+    actions.appendChild(btnNote);actions.appendChild(btnW);actions.appendChild(btnD);
+    li.appendChild(main);li.appendChild(actions);adminAppList.appendChild(li);
+  });
+  adminCountInfo.textContent=list.length+" randevu listeleniyor.";
+}
+adminDateFilter.onchange=renderAdminAppointments;
+adminBarberFilter.onchange=renderAdminAppointments;
+
+/* BERBER ÇALIŞMA SAATİ MODAL UI */
+function buildScheduleModalUI(){
+  scheduleWrapper.innerHTML="";
+  for(let i=0;i<7;i++){
+    const row=document.createElement("div");
+    row.className="schedule-row";
+    row.dataset.day=i;
+    const head=document.createElement("div");
+    head.className="schedule-row-head";
+    const title=document.createElement("div");
+    title.className="schedule-day-name";
+    title.textContent=DAY_NAMES[i];
+    const label=document.createElement("label");
+    label.className="day-active-label";
+    const cb=document.createElement("input");
+    cb.type="checkbox";cb.className="day-active";
+    const span=document.createElement("span");span.textContent="Aktif";
+    label.appendChild(cb);label.appendChild(span);
+    head.appendChild(title);head.appendChild(label);
+    const intervalsDiv=document.createElement("div");
+    intervalsDiv.className="schedule-intervals";
+    const btnAdd=document.createElement("button");
+    btnAdd.type="button";btnAdd.className="btn-add-interval";btnAdd.textContent="+ Dilim Ekle";
+    btnAdd.onclick=()=>addIntervalRow(intervalsDiv);
+    row.appendChild(head);row.appendChild(intervalsDiv);row.appendChild(btnAdd);
+    scheduleWrapper.appendChild(row);
+  }
+}
+function addIntervalRow(container, startVal, endVal){
+  const div=document.createElement("div");
+  div.className="schedule-interval";
+  const sSel=document.createElement("select");
+  const eSel=document.createElement("select");
+  SLOT_TIMES.forEach(t=>{
+    const o1=document.createElement("option");o1.value=t;o1.textContent=t;sSel.appendChild(o1);
+    const o2=document.createElement("option");o2.value=t;o2.textContent=t;eSel.appendChild(o2);
+  });
+  if(startVal) sSel.value=startVal;
+  if(endVal) eSel.value=endVal;
+  const btnDel=document.createElement("button");
+  btnDel.type="button";btnDel.textContent="x";
+  btnDel.onclick=()=>container.removeChild(div);
+  div.appendChild(sSel);div.appendChild(eSel);div.appendChild(btnDel);
+  container.appendChild(div);
+}
+function openScheduleModal(barberId){
+  currentScheduleBarberId=barberId;
+  const barber=getBarbers().find(b=>b.id===barberId);
+  if(!barber)return;
+  const schedule=getWeeklyScheduleForBarber(barber);
+  scheduleModalTitle.textContent=`${barber.name} • Çalışma Saatleri`;
+  buildScheduleModalUI();
+  const rows=scheduleWrapper.querySelectorAll(".schedule-row");
+  rows.forEach(row=>{
+    const day=parseInt(row.dataset.day,10);
+    const intervals=schedule[day]||[];
+    const cb=row.querySelector(".day-active");
+    const container=row.querySelector(".schedule-intervals");
+    if(intervals.length){
+      cb.checked=true;
+      intervals.forEach(iv=>addIntervalRow(container,iv.start,iv.end));
+    }else{
+      cb.checked=false;
+    }
+  });
+  scheduleModal.style.display="flex";
+}
+scheduleModalClose.onclick=()=>{scheduleModal.style.display="none";};
+btnSaveSchedule.onclick=()=>{
+  if(!currentScheduleBarberId){scheduleModal.style.display="none";return;}
+  const barbers=getBarbers();
+  const idx=barbers.findIndex(b=>b.id===currentScheduleBarberId);
+  if(idx===-1){scheduleModal.style.display="none";return;}
+  const schedule={};
+  const rows=scheduleWrapper.querySelectorAll(".schedule-row");
+  let error=false;
+  rows.forEach(row=>{
+    const day=parseInt(row.dataset.day,10);
+    const cb=row.querySelector(".day-active");
+    const container=row.querySelector(".schedule-intervals");
+    const dayIntervals=[];
+    if(cb.checked){
+      const children=Array.from(container.querySelectorAll(".schedule-interval"));
+      children.forEach(div=>{
+        const selects=div.querySelectorAll("select");
+        const s=selects[0].value;
+        const e=selects[1].value;
+        const sIdx=timeIndex(s);
+        const eIdx=timeIndex(e);
+        if(sIdx===-1||eIdx===-1||sIdx>eIdx){
+          error=true;
+        }else{
+          dayIntervals.push({start:s,end:e});
+        }
+      });
+    }
+    schedule[day]=dayIntervals;
+  });
+  if(error){
+    showToast("Saat aralıklarında hata var (başlangıç > bitiş).","err");
+    return;
+  }
+  barbers[idx].weeklySchedule=schedule;
+  const pz=schedule[0] && schedule[0][0];
+  if(pz){
+    barbers[idx].startSlot=pz.start;
+    barbers[idx].endSlot=pz.end;
+  }
+  setBarbers(barbers);
+  scheduleModal.style.display="none";
+  renderBarbersAdmin();
+  renderSlots();
+  showToast("Çalışma saatleri kaydedildi.");
+};
+
+/* === PDF BUTONLARI === */
+if (btnPrintReports){
+  btnPrintReports.onclick = () => {
+    if (!isAdminLogged()) {
+      showToast("Önce admin girişi yap.","err");
+      return;
+    }
+    showAdminSection("adminSectionRapor");
+    setTimeout(() => {
+      window.print();
+    }, 200);
+  };
+}
+if (btnPrintAppointments){
+  btnPrintAppointments.onclick = () => {
+    if (!isAdminLogged()) {
+      showToast("Önce admin girişi yap.","err");
+      return;
+    }
+    showAdminSection("adminSectionRandevu");
+    setTimeout(() => {
+      window.print();
+    }, 200);
+  };
+}
+
+/* INIT */
+ensureDefaultBarbers();
+ensureDefaultServices();
+setDateLimits();
+renderBarberSelect();
+renderServiceSelect();
+const todayStr=new Date().toISOString().slice(0,10);
+dateInput.value=todayStr;
+dateInput.onchange=renderSlots;
+barberSel.onchange=()=>{
+  document.querySelectorAll(".barber-chip").forEach(c=>c.classList.toggle("selected",c.dataset.id===barberSel.value));
+  renderSlots();
+};
+renderSlots();
+applyCustomerToForm();
+updateAdminButton();
+updateCustomerButton();
+renderMyAppointments();
+renderBarbersAdmin();
+renderAdminBarberFilter();
+renderServicesAdmin();
+renderClosedDatesAdmin();
+if(isAdminLogged()){
+  renderAdminAppointments();
+  renderReports();
+}
+
+// Sayfa açıldığında Firestore'dan randevuları çek (tüm cihazlar aynı veriyi görsün)
+loadAppointmentsFromFirestore();
+</script>
+</body>
+</html>
