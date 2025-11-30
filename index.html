@@ -718,7 +718,7 @@ const SLOT_TIMES=[
  "22:00","22:30","23:00","23:30"
 ];
 const ADMIN_PHONE="05356749243";
-const ADMIN_PASS="ahmetgs";
+const ADMIN_PASS="ahmet";
 const MAX_DAYS_AHEAD=30;
 const DAY_NAMES=["Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar"];
 const LOYALTY_TARGET=10;
@@ -1255,7 +1255,7 @@ function renderLoyalty(){
   if(pts===0){
     line2=`Her randevuda +1 puan. ${LOYALTY_TARGET} puanda 1 ücretsiz hizmet.`;
   }else if(remain===0){
-    line2=`Tebrikler! En az bir ücretsiz hizmet hakkın var. (${level} hak birikti)`;
+    line2=`Tebrikler! SAKAL TRAŞI KAZANDINIZ... (${level} hak birikti)`;
   }else{
     line2=`${remain} puan sonra 1 ücretsiz hizmet hakkı kazanırsın.`;
   }
@@ -1772,20 +1772,29 @@ window.sendWp=(phone,msg)=>{
   const url=`https://wa.me/90${phone.replace(/\D/g,"").slice(-10)}?text=${msg}`;
   window.open(url,"_blank");
 };
-window.sendWpTemplate=(type,phone,nameEnc)=>{
-  const name=decodeURIComponent(nameEnc||"");
-  let text="";
+window.sendWpTemplate=(type,phone,nameEnc,extraEnc)=>{
+  const name = decodeURIComponent(nameEnc || "");
+  const extra = extraEnc ? decodeURIComponent(extraEnc) : "";
+  let text = "";
+
   if(type==="reminder"){
     text=`Merhaba ${name || ""}, Ahmet Tekeli Erkek Kuaförü'nden yazıyoruz. Yaklaşan randevunuzu hatırlatmak istedik. Randevu saatinde gelemeyecekseniz lütfen önceden bilgi verin.`;
   }else if(type==="back"){
     text=`Merhaba ${name || ""}, bir süredir sizi göremedik 😊 Saç / sakal bakımınız için uygun olduğunuzda online randevu linkimizden kolayca yer ayırtabilirsiniz. İsterseniz bu mesaja da yazabilirsiniz.`;
   }else if(type==="vip"){
     text=`Merhaba ${name || ""}, Ahmet Tekeli Erkek Kuaförü'nü sık tercih ettiğiniz için teşekkür ederiz 🙏 Sadakatiniz bizim için çok değerli. Bir sonraki gelişinizde kahve ikramımızdır.`;
+  }else if(type==="confirm"){
+    // extra = "tarih|saat|hizmet"
+    const [date,time,service] = extra.split("|");
+    text = `Merhaba ${name || ""},\n\n`+
+           `${date} ${time} için ${service} randevunuz `+
+           `Ahmet Tekeli Erkek Kuaförü'nde oluşturulmuştur.\n\n`+
+           `Gelemeyecekseniz en az 2 saat önce haber vermenizi rica ederiz.`;
   }else{
     text=`Merhaba ${name || ""}, Ahmet Tekeli Erkek Kuaförü'nden yazıyorum.`;
   }
-  const clean=phone.replace(/\D/g,"").slice(-10);
-  const url=`https://wa.me/90${clean}?text=${encodeURIComponent(text)}`;
+  const clean = phone.replace(/\D/g,"").slice(-10);
+  const url   = `https://wa.me/90${clean}?text=${encodeURIComponent(text)}`;
   window.open(url,"_blank");
 };
 window.deleteAppointment=id=>deleteAppointmentById(id,"admin");
