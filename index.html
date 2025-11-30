@@ -1550,18 +1550,24 @@ function clearNotificationsForPhone(phone){
 }
 
 /* Silme / No-show */
-async function deleteAppointmentById(id,source="admin"){
-  const app=appointments.find(a=>a.id===id)||null;
-  appointments=appointments.filter(a=>a.id!==id);
+async function deleteAppointmentById(id, source = "admin"){
+  const app = appointments.find(a => a.id === id) || null;
+
+  // listeden çıkar
+  appointments = appointments.filter(a => a.id !== id);
   await deleteAppointmentFromFirestore(id);
   renderAll();
-  if(app && app.phone){
+
+  if (app && app.phone){
+    // hediye dışındaki tüm bildirimleri temizle
     clearNotificationsForPhone(app.phone);
-    if(source==="customer" && currentCustomer && currentCustomer.phone===app.phone){
-      pushCustomerNotification("deleted",`${app.date} ${app.time} randevunuz iptal edildi.`);
-    }
+    // ❌ artık müşteri iptal ettiğinde ekstra "İptal" bildirimi eklemiyoruz
   }
-  showToast(source==="customer"?"Randevun iptal edildi.":"Randevu silindi.","ok");
+
+  showToast(
+    source === "customer" ? "Randevun iptal edildi." : "Randevu silindi.",
+    "ok"
+  );
 }
 
 /* window global */
