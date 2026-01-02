@@ -431,11 +431,13 @@ body{
       <div id="customerAppsBox" class="panel" style="margin-top:8px;display:none;">
         <div class="section-title">Randevularım</div>
         <ul class="app-list" id="appListModal"></ul>
+        <div id="myAppsMoreRow" style="display:none;margin-top:6px;text-align:center;"></div>
       </div>
 
       <div id="customerNotifBox" class="panel" style="margin-top:8px;display:none;">
         <div class="section-title">Bildirimlerim</div>
         <ul class="app-list" id="notifList"></ul>
+        <div id="myNotifMoreRow" style="display:none;margin-top:6px;text-align:center;"></div>
       </div>
 
       <button class="btn-full" id="btnCustomerLogout" style="margin-top:8px;background:rgba(31,41,55,1);color:#f9fafb;">
@@ -575,7 +577,7 @@ body{
         <div class="row" style="margin-top:6px;">
           <input class="input" id="newServiceName" placeholder="Hizmet adı (Saç Kesim)">
           <input class="input" id="newServicePrice" type="number" min="0" step="30" placeholder="Fiyat">
-          <input class="input" id="newServiceDuration" type="number" min="30" step="60" placeholder="Süre (dk)">
+          <input class="input" id="newServiceDuration" type="number" min="30" step="30" placeholder="Süre (dk)">
         </div>
         <button class="btn-full" id="btnAddService" style="margin-top:6px;">Hizmet Ekle</button>
       </div>
@@ -650,8 +652,9 @@ body{
 <script type="module">
 /* =========================
    FULL SON SÜRÜM (Firestore Realtime)
-   - appointments/services/barbers/schedules/closedDates/customers = realtime
-   - slot çakışması: transaction
+   ✅ 30dk slot mantığı + süre kadar bloklama (60dk = 2 slot)
+   ✅ Müşteri paneli kalabalık olmasın: blok kayıtları gösterilmez + kısalt/tümü
+   ✅ Admin paneli: müşteri silme (müşteri + randevular + notifs)
 ========================= */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
@@ -663,7 +666,8 @@ import {
   addDoc,
   runTransaction,
   serverTimestamp,
-  query, where
+  query, where,
+  writeBatch
 } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
 /* ===== Firebase ===== */
@@ -719,6 +723,10 @@ let selectedTime=null, selectedBarberId=null, currentScheduleBarberId=null;
 let realtimeStarted=false;
 let toastTimer=null;
 
+// müşteri paneli kalabalık olmasın: kısa görünüm
+let showAllMyApps=false;
+let showAllNotifs=false;
+
 /* ===== DOM ===== */
 const slotGrid=document.getElementById("slotGrid");
 const dateInput=document.getElementById("dateInput");
@@ -758,6 +766,8 @@ const regPhone=document.getElementById("regPhone");
 const regPass=document.getElementById("regPass");
 const loyaltyPanel=document.getElementById("loyaltyPanel");
 const loyaltyText=document.getElementById("loyaltyText");
+const myAppsMoreRow=document.getElementById("myAppsMoreRow");
+const myNotifMoreRow=document.getElementById("myNotifMoreRow");
 
 const adminModalEl=document.getElementById("adminModal");
 const btnAdminOpen=document.getElementById("btnAdminOpen");
@@ -836,6 +846,31 @@ function parseLocalDate(str){
   return new Date(y, m-1, d);
 }
 function timeToMinutes(t){const [h,m]=t.split(":").map(Number); return h*60+m;}
+function addMinutesToTime(t, mins){
+  const total = timeToMinutes(t) + mins;
+  const hh = String(Math.floor(total/60)).padStart(2,"0");
+  const mm = String(total%60).padStart(2,"0");
+  return `${hh}:${mm}`;
+}
+function blocksForDuration(startTime, durationMin){
+  const dur = Math.max(30, Number(durationMin||30));
+  const blocks = Math.ceil(dur/30);
+  const arr=[];
+  for(let i=0;i<blocks;i++) arr.push(addMinutesToTime(startTime, i*30));
+  return arr;
+}
+function getSelectedService(){
+  const id = servSel.value;
+  return services.find(s=>s.id===id) || null;
+}
+function isBlockedStatus(a){
+  return (a.status||"") === "blocked";
+}
+function isPrimaryAppointment(a){
+  // eski kayıtlar (isPrimary yok) = ana randevu kabul
+  return a.isPrimary !== false && !isBlockedStatus(a);
+}
+
 function createDefaultSchedule(){
   const arr=[]; for(let i=0;i<7;i++){
     arr.push({active:i<6, intervals:[{start:"09:00", end:"19:00"}]});
@@ -909,20 +944,27 @@ async function pushCustomerNotifFS(phone10, type, msg){
 function startNotifListener(){
   if(!currentCustomer) return;
   const phone10=currentCustomer.phone10;
+
   onSnapshot(collection(db, `${COL.customers}/${phone10}/notifs`), snap=>{
-    const list = snap.docs.map(d=>({id:d.id, ...d.data()}))
+    const all = snap.docs.map(d=>({id:d.id, ...d.data()}))
       .sort((a,b)=>{
         const ta=a.createdAt?.seconds||0;
         const tb=b.createdAt?.seconds||0;
         return tb-ta;
-      }).slice(0,20);
+      });
 
-    if(!list.length){
+    if(!all.length){
       customerNotifBox.style.display="none";
       notifList.innerHTML="";
+      myNotifMoreRow.style.display="none";
       return;
     }
+
     customerNotifBox.style.display="block";
+
+    const limit = 5;
+    const list = showAllNotifs ? all : all.slice(0, limit);
+
     notifList.innerHTML=list.map(n=>{
       let label="Bilgi",color="#22c55e";
       if(n.type==="deleted"){label="İptal";color="#f97373";}
@@ -937,6 +979,23 @@ function startNotifListener(){
         <div class="app-meta">${at}</div>
       </li>`;
     }).join("");
+
+    if(all.length>limit){
+      myNotifMoreRow.style.display="block";
+      myNotifMoreRow.innerHTML = `<button class="btn-mini note" type="button" id="btnToggleNotifs">
+        ${showAllNotifs ? "Daha Az Göster" : "Tümünü Göster ("+all.length+")"}
+      </button>`;
+      document.getElementById("btnToggleNotifs").onclick=()=>{
+        showAllNotifs=!showAllNotifs;
+        // tekrar render için küçük hile: listener zaten çalışıyor, sadece aynı DOM’u güncelliyoruz:
+        // en basit: startNotifListener'ın tekrar çalışmasına gerek yok, aynı blok ile tekrar yazacağız:
+        // burada snapshot'ı tekrar tetiklemek yok; bu yüzden basitçe kendimizi çağırıyoruz:
+        // (kolay yol) küçük bir state değişimi sonrası yeniden çizmek için renderMyAppointments + refreshCustomerUI
+        refreshCustomerUI();
+      };
+    }else{
+      myNotifMoreRow.style.display="none";
+    }
   });
 }
 
@@ -978,6 +1037,7 @@ function startRealtime(){
   onSnapshot(col(COL.services), snap=>{
     services = snap.docs.map(d=>({id:d.id, ...d.data()})).sort((a,b)=>(a.name||"").localeCompare(b.name||""));
     renderServices();
+    renderSlots();
     updateAdminSummary();
   });
 
@@ -1094,6 +1154,15 @@ function setSelectedBarber(id){
   renderSlots();
 }
 
+function isTimeInSchedule(mins, daySch){
+  if(!daySch?.intervals?.length) return true; // schedule yoksa serbest
+  for(const it of daySch.intervals){
+    const s=timeToMinutes(it.start), e=timeToMinutes(it.end);
+    if(mins>=s && mins<e) return true;
+  }
+  return false;
+}
+
 function renderSlots(){
   const dateVal=dateInput.value;
   slotGrid.innerHTML="";
@@ -1122,25 +1191,50 @@ function renderSlots(){
     if(!daySch.intervals?.length){ dayInfoHelper.textContent=`${brb?brb.name:"Berber"} için bu güne saat tanımlı değil.`; return; }
   }
 
+  const svcSel = getSelectedService();
+  const selectedDur = Number(svcSel?.duration || 30);
+
   const isToday = (dateVal===today);
   const now=new Date();
   const nowMin=now.getHours()*60+now.getMinutes();
 
+  // dolu zamanlar set'i
+  const occupied = new Set();
+  appointments.forEach(a=>{
+    if(a.date!==dateVal) return;
+    if(a.barberId!==barberId) return;
+
+    if(a.time) occupied.add(a.time);
+
+    // eski kayıtlar için (blok doc yoksa) süre kadar blokla
+    const hasGroup = !!a.groupId;
+    const primaryLike = (a.isPrimary !== false);
+    if(!hasGroup && primaryLike && a.time){
+      const dur = Number(a.duration || a.serviceDuration || (services.find(s=>s.id===a.serviceId)?.duration) || 30);
+      blocksForDuration(a.time, dur).forEach(bt=>occupied.add(bt));
+    }
+  });
+
   const btns=[];
   for(const t of SLOT_TIMES){
     const tm=timeToMinutes(t);
-    if(isToday && tm<=nowMin+2) continue;
 
-    if(daySch){
-      let ok=false;
-      for(const it of daySch.intervals){
-        const s=timeToMinutes(it.start), e=timeToMinutes(it.end);
-        if(tm>=s && tm<e){ ok=true; break; }
-      }
-      if(!ok) continue;
+    // bugünse: seçilecek blokların herhangi biri "şimdi"ye çok yakınsa kapat
+    if(isToday){
+      const need = blocksForDuration(t, selectedDur);
+      const anyPast = need.some(bt => timeToMinutes(bt) <= nowMin+2);
+      if(anyPast) continue;
     }
 
-    const disabled = appointments.some(a=>a.date===dateVal && a.barberId===barberId && a.time===t);
+    // çalışma saatleri: seçilecek blokların hepsi schedule içinde olmalı
+    if(daySch){
+      const need = blocksForDuration(t, selectedDur);
+      const okAll = need.every(bt => isTimeInSchedule(timeToMinutes(bt), daySch));
+      if(!okAll) continue;
+    }
+
+    const needBlocks = blocksForDuration(t, selectedDur);
+    const disabled = needBlocks.some(bt => occupied.has(bt));
     btns.push(`<button type="button" class="slot ${disabled?"disabled":""}" data-time="${t}" ${disabled?"disabled":""}>${t}</button>`);
   }
 
@@ -1168,17 +1262,30 @@ function renderClosedDateList(){
 }
 
 function renderMyAppointments(){
-  if(!currentCustomer){ customerAppsBox.style.display="none"; appListModal.innerHTML=""; return; }
-  const list = appointments.filter(a=>a.phone10===currentCustomer.phone10);
-  if(!list.length){ customerAppsBox.style.display="none"; appListModal.innerHTML=""; return; }
+  if(!currentCustomer){ customerAppsBox.style.display="none"; appListModal.innerHTML=""; myAppsMoreRow.style.display="none"; return; }
+
+  let list = appointments
+    .filter(a=>a.phone10===currentCustomer.phone10)
+    .filter(a=>isPrimaryAppointment(a));
+
+  // en yeni üstte
+  list = list.sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
+
+  if(!list.length){ customerAppsBox.style.display="none"; appListModal.innerHTML=""; myAppsMoreRow.style.display="none"; return; }
+
   customerAppsBox.style.display="block";
-  appListModal.innerHTML = list.map(a=>{
+
+  const limit=6;
+  const shown = showAllMyApps ? list : list.slice(0, limit);
+
+  appListModal.innerHTML = shown.map(a=>{
     const status=a.status||"active";
     const statusLabel=status==="noshow"?` • <span style="color:#f97373;">(Gelmedi)</span>`:"";
     const noteHtml=a.loyaltyNote?`<div class="app-meta" style="color:#facc15;font-weight:800;">${a.loyaltyNote}</div>`:"";
+    const endInfo = a.endTime ? ` • <span style="color:#cbd5f5;">Bitiş: ${a.endTime}</span>` : "";
     return `<li class="app-item">
       <div class="app-main">
-        <div class="app-title">${a.date} • ${a.time}${statusLabel}</div>
+        <div class="app-title">${a.date} • ${a.time}${statusLabel}${endInfo}</div>
         <div class="app-meta">${a.serviceName} • ${a.barberName}</div>
         ${noteHtml}
       </div>
@@ -1187,10 +1294,23 @@ function renderMyAppointments(){
       </div>
     </li>`;
   }).join("");
+
+  if(list.length>limit){
+    myAppsMoreRow.style.display="block";
+    myAppsMoreRow.innerHTML = `<button class="btn-mini note" type="button" id="btnToggleMyApps">
+      ${showAllMyApps ? "Daha Az Göster" : "Tümünü Göster ("+list.length+")"}
+    </button>`;
+    document.getElementById("btnToggleMyApps").onclick=()=>{
+      showAllMyApps=!showAllMyApps;
+      renderMyAppointments();
+    };
+  }else{
+    myAppsMoreRow.style.display="none";
+  }
 }
 
 function renderAdminAppointments(){
-  let list=[...appointments];
+  let list=[...appointments].filter(a=>isPrimaryAppointment(a));
   const fDate=adminDateFilter.value, fBarber=adminBarberFilter.value;
   if(fDate) list=list.filter(a=>a.date===fDate);
   if(fBarber) list=list.filter(a=>a.barberId===fBarber);
@@ -1200,11 +1320,12 @@ function renderAdminAppointments(){
     const statusBadge=status==="noshow"?'<span style="color:#f97373;font-weight:900;">(Gelmedi)</span>':"";
     const noshowBtn=status==="noshow"?"":`<button class="btn-mini note" onclick="window.markNoShow('${a.id}')">Gelmedi</button>`;
     const noteHtml=a.loyaltyNote?`<div class="app-meta" style="color:#facc15;font-weight:800;">${a.loyaltyNote}</div>`:"";
+    const endInfo = a.endTime ? ` • Bitiş: ${a.endTime}` : "";
     return `<li class="app-item">
       <div class="app-main">
         <div class="app-title">${a.date} • ${a.time} ${statusBadge}</div>
         <div class="app-meta">${a.name} • ${a.phoneRaw||""}</div>
-        <div class="app-meta">${a.serviceName} • ${a.price} ₺ • ${a.barberName}</div>
+        <div class="app-meta">${a.serviceName} • ${a.price} ₺ • ${a.barberName}${endInfo}</div>
         ${noteHtml}
       </div>
       <div class="app-actions">
@@ -1221,7 +1342,7 @@ function renderAdminAppointments(){
 
 function renderReports(){
   const map={};
-  appointments.forEach(a=>{
+  appointments.filter(a=>isPrimaryAppointment(a)).forEach(a=>{
     const st=a.status||"active"; if(st==="noshow") return;
     const key=`${a.date}#${a.serviceName}`;
     if(!map[key]) map[key]={date:a.date, service:a.serviceName, count:0, total:0};
@@ -1242,10 +1363,10 @@ function renderReports(){
 
 function updateAdminSummary(){
   const t=todayStr();
-  const todays=appointments.filter(a=>a.date===t && (a.status||"active")!=="noshow");
-  let todayRev=0; todays.forEach(a=>todayRev+=Number(a.price||0));
+  const valid = appointments.filter(a=>isPrimaryAppointment(a)).filter(a=>(a.status||"active")!=="noshow");
+  const todays = valid.filter(a=>a.date===t);
 
-  const valid=appointments.filter(a=>(a.status||"active")!=="noshow");
+  let todayRev=0; todays.forEach(a=>todayRev+=Number(a.price||0));
   let allRev=0; valid.forEach(a=>allRev+=Number(a.price||0));
 
   const now=new Date(); const jsDay=now.getDay(); const idx=(jsDay+6)%7;
@@ -1314,7 +1435,7 @@ async function computeCustomerAgg(){
     map[c.phone10]={customer:c, visits:0, spend:0, lastDate:null, cancelCount:0, segment:"Yeni"};
   });
 
-  appointments.forEach(a=>{
+  appointments.filter(a=>isPrimaryAppointment(a)).forEach(a=>{
     if(!a.phone10) return;
     if(!map[a.phone10]){
       map[a.phone10]={customer:{name:a.name||"Müşteri", phone10:a.phone10, points:0}, visits:0, spend:0, lastDate:null, cancelCount:0, segment:"Yeni"};
@@ -1364,7 +1485,6 @@ async function renderAdminCustomers(){
     else if(seg==="Uzun Süredir Gelmeyen") color="#f97373";
 
     const badge = `<span style="padding:2px 7px;border-radius:999px;font-size:10px;background:${color}22;color:${color};border:1px solid ${color}80;">${seg}</span>`;
-
     const phoneDisplay = c.phoneRaw || ("0"+c.phone10);
 
     return `
@@ -1379,6 +1499,7 @@ async function renderAdminCustomers(){
           <button class="btn-mini wp" onclick="window.sendWpTemplate('reminder','${phoneDisplay}','${encodeURIComponent(c.name||"")}')">Hatırlatma</button>
           <button class="btn-mini wp" onclick="window.sendWpTemplate('back','${phoneDisplay}','${encodeURIComponent(c.name||"")}')">Geri Dönüş</button>
           <button class="btn-mini wp" onclick="window.sendWpTemplate('vip','${phoneDisplay}','${encodeURIComponent(c.name||"")}')">VIP Teşekkür</button>
+          <button class="btn-mini del" onclick="window.deleteCustomer('${c.phone10}')">Müşteri Sil</button>
         </div>
       </li>
     `;
@@ -1402,13 +1523,15 @@ window.openCustomerDetail=(phone10)=>{
   const c=row.customer;
   const list = appointments
     .filter(a=>a.phone10===phone10)
+    .filter(a=>isPrimaryAppointment(a))
     .sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time))
     .slice(0,10);
 
   const items = list.length ? list.map(a=>{
     const status=a.status==="noshow"?' • <span style="color:#f97373;">(Gelmedi)</span>':"";
+    const endInfo = a.endTime ? ` • Bitiş: ${a.endTime}` : "";
     return `<li class="app-item"><div class="app-main">
-      <div class="app-title">${a.date} • ${a.time}${status}</div>
+      <div class="app-title">${a.date} • ${a.time}${status}${endInfo}</div>
       <div class="app-meta">${a.serviceName} • ${a.price} ₺ • ${a.barberName}</div>
     </div></li>`;
   }).join("") : `<div class="helper">Bu müşteri için kayıtlı randevu bulunmuyor.</div>`;
@@ -1423,6 +1546,37 @@ window.openCustomerDetail=(phone10)=>{
     <div class="section-title" style="margin-top:8px;color:#e5e7eb;">Son Randevular</div>
     <ul class="app-list">${items}</ul>
   `;
+};
+
+window.deleteCustomer = async (phone10)=>{
+  if(!phone10) return;
+  if(!confirm("Bu müşteriyi ve tüm randevularını silmek istiyor musun?")) return;
+
+  try{
+    const qApps = query(col(COL.apps), where("phone10","==", phone10));
+    const snapApps = await getDocs(qApps);
+    const snapNotifs = await getDocs(collection(db, `${COL.customers}/${phone10}/notifs`));
+
+    let batch = writeBatch(db);
+    let count = 0;
+
+    for(const d of snapApps.docs){
+      batch.delete(d.ref); count++;
+      if(count>=450){ await batch.commit(); batch=writeBatch(db); count=0; }
+    }
+    for(const d of snapNotifs.docs){
+      batch.delete(d.ref); count++;
+      if(count>=450){ await batch.commit(); batch=writeBatch(db); count=0; }
+    }
+
+    batch.delete(dref(COL.customers, phone10));
+    await batch.commit();
+
+    showToast("Müşteri silindi.","ok");
+  }catch(e){
+    console.error(e);
+    showToast("Müşteri silme hatası (Rules/izin).","err");
+  }
 };
 
 /* ===== Customer UI ===== */
@@ -1453,19 +1607,27 @@ function refreshBookingHelper(){
   if(currentCustomer) bookingHelper.textContent="Hoş geldin, randevunu oluşturup aşağıdan saat seçebilirsin.";
 }
 
-/* ===== BOOK (transaction + points) ===== */
+/* ===== BOOK (transaction + points + süre kadar blok) ===== */
 async function createAppointmentTx(app){
-  const slotId = slotIdFor(app.date, app.barberId, app.time);
-  const appRef = dref(COL.apps, slotId);
+  const groupId = slotIdFor(app.date, app.barberId, app.time); // ana randevu id
   const custRef = dref(COL.customers, app.phone10);
 
-  await runTransaction(db, async (tx)=>{
-    const existing = await tx.get(appRef);
-    if(existing.exists()) throw new Error("SLOT_TAKEN");
+  const durationMin = Number(app.duration || app.serviceDuration || 30);
+  const blockTimes = blocksForDuration(app.time, durationMin); // 60dk => [15:00,15:30]
+  const endTime = addMinutesToTime(app.time, durationMin);
 
+  await runTransaction(db, async (tx)=>{
     const custSnap = await tx.get(custRef);
     if(!custSnap.exists()) throw new Error("NO_CUSTOMER");
 
+    // tüm bloklar boş mu?
+    for(const bt of blockTimes){
+      const ref = dref(COL.apps, slotIdFor(app.date, app.barberId, bt));
+      const snap = await tx.get(ref);
+      if(snap.exists()) throw new Error("SLOT_TAKEN");
+    }
+
+    // puan sadece ana randevuda
     const cust = custSnap.data()||{};
     const oldPts = Number(cust.points||0);
     const newPts = oldPts + 1;
@@ -1474,13 +1636,50 @@ async function createAppointmentTx(app){
       ? `Müşteri ${newPts}. puanına ulaştı (hediye hakkı).`
       : "";
 
-    tx.set(appRef, {
-      ...app,
-      id: slotId,
-      loyaltyNote: note || null,
-      createdAt: serverTimestamp(),
-      status:"active"
-    });
+    // blok docları yaz
+    for(let i=0;i<blockTimes.length;i++){
+      const bt = blockTimes[i];
+      const slotId = slotIdFor(app.date, app.barberId, bt);
+      const ref = dref(COL.apps, slotId);
+
+      const isPrimary = (i===0);
+      if(isPrimary){
+        tx.set(ref, {
+          ...app,
+          id: slotId,
+          groupId,
+          isPrimary: true,
+          startTime: app.time,
+          endTime,
+          duration: durationMin,
+          serviceDuration: durationMin,
+          loyaltyNote: note || null,
+          createdAt: serverTimestamp(),
+          status:"active"
+        });
+      }else{
+        tx.set(ref, {
+          id: slotId,
+          groupId,
+          isPrimary:false,
+          date: app.date,
+          time: bt,
+          startTime: app.time,
+          endTime,
+          duration: durationMin,
+          serviceDuration: durationMin,
+          barberId: app.barberId,
+          barberName: app.barberName,
+          serviceId: app.serviceId,
+          serviceName: app.serviceName,
+          phone10: app.phone10,
+          phoneRaw: app.phoneRaw,
+          name: app.name,
+          createdAt: serverTimestamp(),
+          status:"blocked"
+        });
+      }
+    }
 
     tx.set(custRef, {
       points: newPts,
@@ -1488,12 +1687,12 @@ async function createAppointmentTx(app){
     }, {merge:true});
   });
 
-  // notif (FS)
   await pushCustomerNotifFS(app.phone10, "added", `${app.date} ${app.time} için randevunuz oluşturuldu.`);
 }
 
 /* ===== Events ===== */
 dateInput.addEventListener("change",renderSlots);
+servSel.addEventListener("change",renderSlots);
 
 /* randevu al */
 btnBook.addEventListener("click", async ()=>{
@@ -1520,12 +1719,19 @@ btnBook.addEventListener("click", async ()=>{
   if(dateVal<tStr){ showToast("Geçmiş tarihe randevu alınamaz.","err"); return; }
   const diff=(parseLocalDate(dateVal)-parseLocalDate(tStr))/86400000;
   if(diff>MAX_DAYS_AHEAD){ showToast(`En fazla ${MAX_DAYS_AHEAD} gün sonrasına randevu alabilirsin.`,"err"); return; }
-  if(appointments.some(a=>a.date===dateVal && a.barberId===barberId && a.time===timeVal)){
-    showToast("Bu saat dolu, lütfen başka bir saat seç.","err"); renderSlots(); return;
-  }
 
   const svc=services.find(s=>s.id===serviceId);
   const brb=barbers.find(b=>b.id===barberId);
+
+  // ekstra güvenlik: süre kadar blokların herhangi biri doluysa izin verme
+  const dur = Number(svc?.duration || 30);
+  const need = blocksForDuration(timeVal, dur);
+  const already = appointments.some(a=>a.date===dateVal && a.barberId===barberId && need.includes(a.time));
+  if(already){
+    showToast("Bu saat aralığı dolu, lütfen başka bir saat seç.","err");
+    renderSlots();
+    return;
+  }
 
   const app={
     id:"",
@@ -1537,6 +1743,8 @@ btnBook.addEventListener("click", async ()=>{
     serviceId,
     serviceName:svc?svc.name:"İşlem",
     price:svc?Number(svc.price||0):0,
+    duration: Number(svc?Number(svc.duration||30):30),
+    serviceDuration: Number(svc?Number(svc.duration||30):30),
     barberId,
     barberName:brb?brb.name:"Berber",
   };
@@ -1544,7 +1752,6 @@ btnBook.addEventListener("click", async ()=>{
   try{
     await createAppointmentTx(app);
 
-    // bonus notif
     const refreshed = await getDoc(dref(COL.customers, phone10));
     const pts = Number(refreshed.data()?.points||0);
     if(pts && pts % LOYALTY_TARGET === 0){
@@ -1703,6 +1910,7 @@ btnAddService.addEventListener("click", async ()=>{
   const price=Number(newServicePriceEl.value||0);
   const dur=Number(newServiceDurationEl.value||0);
   if(!name||!dur){ showToast("Hizmet adı ve süre gir.","err"); return; }
+  if(dur<30){ showToast("Süre en az 30 dk olmalı.","err"); return; }
 
   const id="svc_"+Date.now();
   try{
@@ -1771,11 +1979,31 @@ window.deleteClosedDate = async (d)=>{
   catch(e){ console.error(e); showToast("Silme hatası","err"); }
 };
 
-/* Randevu sil / müşteri iptal (FS) */
+/* Randevu sil / müşteri iptal (FS) — grup varsa tüm blokları sil */
 async function deleteAppointmentById(id, source="admin"){
   try{
     const app = appointments.find(a=>a.id===id);
-    await deleteDoc(dref(COL.apps, id));
+    if(!app){ showToast("Kayıt bulunamadı.","err"); return; }
+
+    if(app.groupId){
+      const qy = query(col(COL.apps), where("groupId","==", app.groupId));
+      const snap = await getDocs(qy);
+
+      let batch = writeBatch(db);
+      let n=0;
+      snap.docs.forEach(d=>{
+        batch.delete(d.ref); n++;
+        if(n>=450){
+          batch.commit();
+          batch = writeBatch(db);
+          n=0;
+        }
+      });
+      await batch.commit();
+    }else{
+      await deleteDoc(dref(COL.apps, id));
+    }
+
     if(app?.phone10){
       await pushCustomerNotifFS(app.phone10, "deleted", `${app.date} ${app.time} randevunuz iptal edildi.`);
     }
@@ -1844,7 +2072,7 @@ btnPrintAppointments.addEventListener("click",()=>{
 /* Bugün özet */
 btnCopyTodaySummary.addEventListener("click",()=>{
   const t=todayStr();
-  const todays=appointments.filter(a=>a.date===t && (a.status||"active")!=="noshow");
+  const todays=appointments.filter(a=>isPrimaryAppointment(a)).filter(a=>a.date===t && (a.status||"active")!=="noshow");
   let rev=0; todays.forEach(a=>rev+=Number(a.price||0));
   const sCounts={},bCounts={};
   todays.forEach(a=>{
@@ -1995,7 +2223,6 @@ async function restoreSession(){
 /* init */
 async function init(){
   dateInput.value = todayStr();
-
   await restoreSession();
 
   if(isAdminLoggedIn){
