@@ -574,8 +574,8 @@ body{
 
         <div class="row" style="margin-top:6px;">
           <input class="input" id="newServiceName" placeholder="Hizmet adı (Saç Kesim)">
-          <input class="input" id="newServicePrice" type="number" min="0" step="10" placeholder="Fiyat">
-          <input class="input" id="newServiceDuration" type="number" min="15" step="15" placeholder="Süre (dk)">
+          <input class="input" id="newServicePrice" type="number" min="0" step="30" placeholder="Fiyat">
+          <input class="input" id="newServiceDuration" type="number" min="30" step="30" placeholder="Süre (dk)">
         </div>
         <button class="btn-full" id="btnAddService" style="margin-top:6px;">Hizmet Ekle</button>
       </div>
@@ -947,7 +947,7 @@ async function seedIfEmpty(){
     const defaults = [
       {id:"svc-sac",name:"Saç Kesim",price:250,duration:30},
       {id:"svc-sac-sakal",name:"Saç + Sakal",price:400,duration:60},
-      {id:"svc-sakal",name:"Sakal",price:200,duration:20}
+      {id:"svc-sakal",name:"Sakal",price:200,duration:30}
     ];
     for(const x of defaults) await setDoc(dref(COL.services, x.id), x);
   }
