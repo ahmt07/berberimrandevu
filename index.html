@@ -420,7 +420,6 @@ body{
       <button class="modal-close" type="button" id="modalClose">&times;</button>
     </div>
 
-    <!-- GİRİŞ YAPILDI -->
     <div id="customerLoggedBox" style="display:none;">
       <div class="helper" id="customerLoggedText"></div>
 
@@ -429,27 +428,11 @@ body{
         <ul class="app-list" id="appListModal"></ul>
       </div>
 
-      <!-- ✅ SADE: SADECE ŞİFRE DEĞİŞTİR (Şifremi unuttum YOK) -->
-      <div class="panel" style="margin-top:10px;">
-        <div class="section-title" style="color:#e5e7eb;">Şifre Değiştir</div>
-        <div class="section-title" style="margin-top:6px;color:#e5e7eb;">Mevcut Şifre</div>
-        <input class="input" id="custOldPass" type="password" placeholder="••••••">
-        <div class="section-title" style="margin-top:6px;color:#e5e7eb;">Yeni Şifre</div>
-        <input class="input" id="custNewPass" type="password" placeholder="En az 4 karakter">
-        <div class="section-title" style="margin-top:6px;color:#e5e7eb;">Yeni Şifre (Tekrar)</div>
-        <input class="input" id="custNewPass2" type="password" placeholder="En az 4 karakter">
-        <button class="btn-full" id="btnChangePass" style="margin-top:8px;background:rgba(59,130,246,.22);color:#dbeafe;">
-          Şifreyi Değiştir
-        </button>
-        <div class="helper" style="color:#cbd5f5;">Not: “Şifremi unuttum” kaldırıldı. Şifre değiştirmek için mevcut şifreni bilmen gerekir.</div>
-      </div>
-
       <button class="btn-full" id="btnCustomerLogout" style="margin-top:10px;background:rgba(31,41,55,1);color:#f9fafb;">
         Çıkış Yap
       </button>
     </div>
 
-    <!-- GİRİŞ / KAYIT -->
     <div class="tabs" id="tabsRow">
       <button class="tab-btn active" type="button" data-tab="login">Giriş Yap</button>
       <button class="tab-btn" type="button" data-tab="register">Kayıt Ol</button>
@@ -574,6 +557,7 @@ body{
           <div>
             <div class="section-title">Tarih Filtresi</div>
             <input type="date" class="date-input" id="adminDateFilter">
+            <div class="helper" style="color:#cbd5f5;margin-top:4px;">Not: Admin listesi varsayılan <b>bugün</b> olarak ayarlı.</div>
           </div>
           <div>
             <div class="section-title">Berber Filtresi</div>
@@ -631,6 +615,25 @@ body{
       <!-- MÜŞTERİLER -->
       <div class="admin-section" id="adminSectionMusteri">
         <div class="section-title">Müşteri Listesi</div>
+
+        <!-- YENİ: Arama + Segment filtresi -->
+        <div class="admin-filter-row" style="margin-top:6px;">
+          <div style="flex:1;">
+            <div class="section-title">İsim / Telefon Ara</div>
+            <input class="input" id="adminCustomerSearch" placeholder="Örn: Ahmet / 05xx / 5xx...">
+          </div>
+          <div style="min-width:160px;">
+            <div class="section-title">Segment</div>
+            <select class="select" id="adminCustomerSegment">
+              <option value="">Tümü</option>
+              <option value="VIP">VIP</option>
+              <option value="Düzenli">Düzenli</option>
+              <option value="Uzun Süredir Gelmeyen">Uzun Süredir Gelmeyen</option>
+              <option value="Yeni">Yeni</option>
+            </select>
+          </div>
+        </div>
+
         <ul class="app-list" id="customerList"></ul>
 
         <div class="panel" id="customerDetail" style="display:none;margin-top:8px;"></div>
@@ -641,7 +644,7 @@ body{
         </div>
 
         <div class="helper" style="margin-top:8px;color:#cbd5f5;">
-          Not: Şifreler güvenlik için “hash” olarak saklanır; admin panelinde gerçek şifre gösterilmez.
+          Not: “Müşteri Sil” müşteri kaydını siler. Randevu geçmişi durabilir.
         </div>
       </div>
 
@@ -683,12 +686,9 @@ body{
 <script type="module">
 /* =========================
    FULL FINAL (Firestore Realtime)
-   ✅ 30dk slot mantığı + süre kilitleme (60dk => 2 slot)
-   ✅ Müşteri paneli sade: sadece randevular (iptal + değiştir)
-   ✅ Randevu değiştir: transaction ile taşıma
-   ✅ Admin müşteri silme
-   ✅ (Bu sürüm) Şifremi Unuttum KALDIRILDI
-   ✅ (Bu sürüm) Müşteri: Şifre Değiştir (mevcut şifre + yeni şifre)
+   ✅ Admin randevu listesi: varsayılan BUGÜN
+   ✅ Geçmiş randevular otomatik silinir (bugünden önce)
+   ✅ Admin Müşteriler: arama + segment filtre
 ========================= */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
@@ -698,7 +698,9 @@ import {
   setDoc, deleteDoc,
   onSnapshot,
   runTransaction,
-  serverTimestamp
+  serverTimestamp,
+  addDoc,
+  writeBatch
 } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
 /* ===== Firebase ===== */
@@ -789,12 +791,6 @@ const regName=document.getElementById("regName");
 const regPhone=document.getElementById("regPhone");
 const regPass=document.getElementById("regPass");
 
-/* ✅ Şifre değiştir alanı */
-const custOldPass = document.getElementById("custOldPass");
-const custNewPass = document.getElementById("custNewPass");
-const custNewPass2 = document.getElementById("custNewPass2");
-const btnChangePass = document.getElementById("btnChangePass");
-
 const adminModalEl=document.getElementById("adminModal");
 const btnAdminOpen=document.getElementById("btnAdminOpen");
 const adminModalClose=document.getElementById("adminModalClose");
@@ -856,6 +852,10 @@ const customerListEl=document.getElementById("customerList");
 const customerDetailEl=document.getElementById("customerDetail");
 const topCustomerListEl=document.getElementById("topCustomerList");
 
+/* YENİ: müşteri filtre inputları */
+const adminCustomerSearchEl = document.getElementById("adminCustomerSearch");
+const adminCustomerSegmentEl = document.getElementById("adminCustomerSegment");
+
 /* reschedule */
 const rescheduleModal = document.getElementById("rescheduleModal");
 const rescheduleClose = document.getElementById("rescheduleClose");
@@ -911,7 +911,7 @@ function showQuickPopupFor(app){
   setTimeout(()=>{quickNotify.style.display="none";},1700);
 }
 
-/* ===== Password hashing ===== */
+/* ===== Password hashing (basic) ===== */
 async function sha256(text){
   const enc = new TextEncoder().encode(text);
   const buf = await crypto.subtle.digest("SHA-256", enc);
@@ -989,6 +989,57 @@ async function seedIfEmpty(){
   }
 }
 
+/* ===== YENİ: geçmiş randevuları otomatik sil (bugünden önce) ===== */
+let cleaningPast = false;
+let lastCleanDay = null;
+
+async function autoDeletePastAppointments(){
+  const t = todayStr();
+  if(lastCleanDay === t && cleaningPast) return;
+  if(cleaningPast) return;
+  cleaningPast = true;
+  lastCleanDay = t;
+
+  try{
+    const pastPrimaries = appointments
+      .filter(a=>!a.isLock)
+      .filter(a=>a.date && a.date < t);
+
+    if(!pastPrimaries.length){
+      cleaningPast = false;
+      return;
+    }
+
+    let refs = [];
+    for(const a of pastPrimaries){
+      const occ = (Array.isArray(a.occupiedTimes) && a.occupiedTimes.length)
+        ? a.occupiedTimes
+        : slotsForDuration(a.time, a.duration || serviceById(a.serviceId)?.duration || 30);
+
+      for(const tt of occ){
+        refs.push(dref(COL.apps, slotIdFor(a.date, a.barberId, tt)));
+      }
+    }
+
+    // uniq
+    const uniqMap = new Map();
+    refs.forEach(r=>uniqMap.set(r.path, r));
+    refs = Array.from(uniqMap.values());
+
+    while(refs.length){
+      const chunk = refs.splice(0, 450);
+      const batch = writeBatch(db);
+      chunk.forEach(ref=>batch.delete(ref));
+      await batch.commit();
+    }
+
+  }catch(e){
+    console.error(e);
+  }finally{
+    cleaningPast = false;
+  }
+}
+
 /* ===== Realtime listeners ===== */
 function startRealtime(){
   if(realtimeStarted) return;
@@ -1032,6 +1083,9 @@ function startRealtime(){
     arr.sort((a,b)=>`${a.date||""} ${a.time||""}`.localeCompare(`${b.date||""} ${b.time||""}`));
     appointments = arr;
     renderAll();
+
+    // YENİ: geçmiş randevuları otomatik temizle (gelecek silinmez)
+    autoDeletePastAppointments();
   });
 }
 
@@ -1431,42 +1485,6 @@ btnLogin.addEventListener("click", async ()=>{
   }
 });
 
-/* ✅ ŞİFRE DEĞİŞTİR (mevcut şifre biliniyorsa) */
-btnChangePass.addEventListener("click", async ()=>{
-  if(!currentCustomer){ showToast("Önce giriş yapmalısın.","err"); return; }
-
-  const oldP = (custOldPass.value||"").trim();
-  const newP = (custNewPass.value||"").trim();
-  const newP2 = (custNewPass2.value||"").trim();
-
-  if(!oldP || !newP || !newP2){ showToast("Tüm şifre alanlarını doldur.","err"); return; }
-  if(newP.length<4){ showToast("Yeni şifre en az 4 karakter olmalı.","err"); return; }
-  if(newP !== newP2){ showToast("Yeni şifreler aynı değil.","err"); return; }
-  if(oldP === newP){ showToast("Yeni şifre eski şifre ile aynı olamaz.","err"); return; }
-
-  const phone10 = currentCustomer.phone10;
-  const ref = dref(COL.customers, phone10);
-
-  try{
-    await runTransaction(db, async (tx)=>{
-      const snap = await tx.get(ref);
-      if(!snap.exists()) throw new Error("NO_CUSTOMER");
-      const data = snap.data()||{};
-      const oldHash = await sha256(PASS_SALT + oldP);
-      if(oldHash !== data.passHash) throw new Error("BAD_OLD");
-      const newHash = await sha256(PASS_SALT + newP);
-      tx.set(ref, { passHash:newHash, updatedAt: serverTimestamp() }, { merge:true });
-    });
-
-    custOldPass.value=""; custNewPass.value=""; custNewPass2.value="";
-    showToast("Şifre değiştirildi.","ok");
-  }catch(e){
-    if(String(e.message).includes("BAD_OLD")) showToast("Mevcut şifre hatalı.","err");
-    else if(String(e.message).includes("NO_CUSTOMER")) showToast("Müşteri kaydı bulunamadı.","err");
-    else { console.error(e); showToast("Şifre değiştirme hatası (Rules/izin olabilir).","err"); }
-  }
-});
-
 /* müşteri çıkış */
 btnCustomerLogout.addEventListener("click",()=>{
   currentCustomer=null;
@@ -1475,7 +1493,7 @@ btnCustomerLogout.addEventListener("click",()=>{
   showToast("Müşteri çıkış yapıldı.","ok");
 });
 
-/* ===== Reschedule ===== */
+/* ===== Reschedule (değiştir) ===== */
 rescheduleClose.addEventListener("click",()=>{ rescheduleModal.style.display="none"; });
 rescheduleDate.addEventListener("change",()=>renderRescheduleSlots());
 
@@ -1648,6 +1666,8 @@ btnAdminLogin.addEventListener("click",()=>{
     adminLoginArea.style.display="none";
     adminPanelArea.style.display="block";
     adminBtnLabel.textContent="Admin Paneli";
+    // YENİ: admin tarih filtresi bugüne sabitlenmiş olsun (boş kalmasın)
+    if(!adminDateFilter.value) adminDateFilter.value = todayStr();
     showToast("Admin giriş başarılı.","ok");
   }else showToast("Admin bilgileri hatalı.","err");
 });
@@ -1668,12 +1688,33 @@ adminTabBtns.forEach(btn=>{
     adminTabBtns.forEach(b=>b.classList.toggle("active",b===btn));
     adminSections.forEach(sec=>sec.classList.toggle("active",sec.id===id));
     if(id==="adminSectionMusteri") renderAdminCustomers();
+    if(id==="adminSectionRandevu"){
+      // YENİ: admin randevu sekmesi açılınca bugünü göster
+      if(!adminDateFilter.value) adminDateFilter.value = todayStr();
+      renderAdminAppointments();
+    }
   });
 });
 
 /* admin filtreler */
 adminDateFilter.addEventListener("change",renderAdminAppointments);
 adminBarberFilter.addEventListener("change",renderAdminAppointments);
+
+/* YENİ: müşteri filtre olayları */
+if(adminCustomerSearchEl){
+  adminCustomerSearchEl.addEventListener("input", ()=>{
+    if(document.getElementById("adminSectionMusteri").classList.contains("active")){
+      renderAdminCustomers();
+    }
+  });
+}
+if(adminCustomerSegmentEl){
+  adminCustomerSegmentEl.addEventListener("change", ()=>{
+    if(document.getElementById("adminSectionMusteri").classList.contains("active")){
+      renderAdminCustomers();
+    }
+  });
+}
 
 /* Hizmet ekle (FS) */
 btnAddService.addEventListener("click", async ()=>{
@@ -1816,6 +1857,9 @@ window.sendWpTemplate=(type,phone,nameEnc)=>{
 
 /* ===== Admin Lists ===== */
 function renderAdminAppointments(){
+  // YENİ: admin tarih filtresi boşsa bugünü baz al
+  if(!adminDateFilter.value) adminDateFilter.value = todayStr();
+
   let list=[...appointments].filter(a=>!a.isLock);
   const fDate=adminDateFilter.value, fBarber=adminBarberFilter.value;
   if(fDate) list=list.filter(a=>a.date===fDate);
@@ -1953,10 +1997,28 @@ async function computeCustomerAgg(){
 }
 
 async function renderAdminCustomers(){
-  const agg = await computeCustomerAgg();
+  const aggAll = await computeCustomerAgg();
+
+  const q = (adminCustomerSearchEl?.value || "").trim().toLowerCase();
+  const seg = (adminCustomerSegmentEl?.value || "").trim();
+
+  let agg = aggAll;
+
+  if(seg){
+    agg = agg.filter(r => (r.segment||"") === seg);
+  }
+  if(q){
+    agg = agg.filter(r=>{
+      const c=r.customer||{};
+      const name=(c.name||"").toLowerCase();
+      const phone=(c.phoneRaw||("0"+(c.phone10||""))).toLowerCase();
+      const phone10=(c.phone10||"").toLowerCase();
+      return name.includes(q) || phone.includes(q) || phone10.includes(q);
+    });
+  }
 
   if(!agg.length){
-    customerListEl.innerHTML = `<li class="app-item"><div class="app-main"><div class="app-title">Henüz müşteri kaydı yok.</div></div></li>`;
+    customerListEl.innerHTML = `<li class="app-item"><div class="app-main"><div class="app-title">Sonuç bulunamadı.</div></div></li>`;
     customerDetailEl.style.display="none";
     customerDetailEl.innerHTML="";
     topCustomerListEl.innerHTML="";
@@ -1990,7 +2052,7 @@ async function renderAdminCustomers(){
     `;
   }).join("");
 
-  const top=[...agg].sort((a,b)=>b.visits-a.visits).slice(0,5);
+  const top=[...aggAll].sort((a,b)=>b.visits-a.visits).slice(0,5);
   topCustomerListEl.innerHTML = top.map(row=>`
     <li class="app-item">
       <div class="app-main">
@@ -2026,7 +2088,6 @@ window.openCustomerDetail=(phone10)=>{
     <div class="section-title" style="color:#e5e7eb;">${c.name||"Müşteri"} • ${phoneDisplay}</div>
     <div class="helper">Toplam ${row.visits} randevu • ${row.spend} ₺</div>
     <div class="helper">Segment: ${row.segment}</div>
-    <div class="helper">Şifre: <b>gösterilmez</b> (hash olarak saklanır)</div>
     <div class="section-title" style="margin-top:8px;color:#e5e7eb;">Son Randevular</div>
     <ul class="app-list">${items}</ul>
   `;
@@ -2214,9 +2275,13 @@ async function restoreSession(){
 
 /* init */
 async function init(){
-  dateInput.value = todayStr();
+  const t = todayStr();
+  dateInput.value = t;
 
   await restoreSession();
+
+  // YENİ: admin randevu filtresi bugüne ayarlı (boş kalmasın)
+  adminDateFilter.value = t;
 
   if(isAdminLoggedIn){
     adminLoginArea.style.display="none";
