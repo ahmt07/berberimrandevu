@@ -964,9 +964,9 @@ async function seedIfEmpty(){
   const s = await getDocs(col(COL.services));
   if(s.empty){
     const defaults = [
-      {id:"svc-sac",name:"Saç Kesim",price:250,duration:30},
-      {id:"svc-sac-sakal",name:"Saç + Sakal",price:400,duration:60},
-      {id:"svc-sakal",name:"Sakal",price:200,duration:30}
+      {id:"svc-sac",name:"Saç Kesim",price:500,duration:30},
+      {id:"svc-sac-sakal",name:"Saç + Sakal",price:700,duration:60},
+      {id:"svc-sakal",name:"Sakal",price:250,duration:30}
     ];
     for(const x of defaults) await setDoc(dref(COL.services, x.id), x);
   }
